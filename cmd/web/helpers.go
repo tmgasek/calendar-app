@@ -1,9 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"runtime/debug"
+
+	"github.com/go-playground/form/v4"
 )
 
 // write error msg and stack trace to errorLog, send generic 500 res to user
@@ -26,4 +29,27 @@ func (app *application) clientError(w http.ResponseWriter, status int) {
 // convenient wrapper around clientError, sends 404 res to user
 func (app *application) notFound(w http.ResponseWriter) {
 	app.clientError(w, http.StatusNotFound)
+}
+
+// DST is target destination that we want to decode the form data into.
+func (app *application) decodePostForm(r *http.Request, dst any) error {
+	err := r.ParseForm()
+	if err != nil {
+		return err
+	}
+
+	err = app.formDecoder.Decode(dst, r.PostForm)
+	if err != nil {
+		// we want to panic if dst invalid
+		var invalidDecoderError *form.InvalidDecoderError
+
+		if errors.As(err, &invalidDecoderError) {
+			panic(err)
+		}
+
+		// return all other errs as normal
+		return err
+	}
+
+	return nil
 }

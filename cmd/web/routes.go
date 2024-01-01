@@ -20,5 +20,8 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/", app.home)
 	router.HandlerFunc(http.MethodGet, "/user/login", app.userLogin)
 
+	router.HandlerFunc(http.MethodGet, "/user/signup", app.userSignup)
+	router.HandlerFunc(http.MethodPost, "/user/signup", app.userSignupPost)
+
 	return router
 }
