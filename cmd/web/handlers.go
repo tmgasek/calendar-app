@@ -71,6 +71,57 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 	app.render(w, http.StatusOK, "login.tmpl", data)
 }
 
+func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
+	var form userLoginForm
+
+	err := app.decodePostForm(r, &form)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	// Validate the form.
+	form.CheckField(validator.NotBlank(form.Email), "email", "This field cannot be blank")
+	form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
+	form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
+
+	if !form.Valid() {
+		data := app.newTemplateData(r)
+		data.Form = form
+		app.render(w, http.StatusUnprocessableEntity, "login.tmpl", data)
+		return
+	}
+
+	// Check if credentials are valid. If not, add generic non field err.
+	id, err := app.models.Users.Authenticate(form.Email, form.Password)
+	if err != nil {
+		if errors.Is(err, data.ErrInvalidCredentials) {
+			form.AddNonFieldError("Email or password is incorrect")
+
+			data := app.newTemplateData(r)
+			data.Form = form
+			app.render(w, http.StatusUnprocessableEntity, "login.tmpl", data)
+		} else {
+			app.serverError(w, err)
+		}
+		return
+	}
+
+	// Change session ID. Good practice to do when auth / privilege state changes.
+	// err = app.sessionManager.RenewToken(r.Context())
+	// if err != nil {
+	// 	app.serverError(w, err)
+	// 	return
+	// }
+
+	// Add ID of current user to session, so they are now "logged in".
+	// app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
+
+	app.infoLog.Printf("!!!! User %d logged in", id)
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
 type userSignupForm struct {
 	Name                string `form:"name"`
 	Email               string `form:"email"`

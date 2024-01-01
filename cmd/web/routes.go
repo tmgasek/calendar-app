@@ -4,7 +4,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"net/http"
 	// "github.com/justinas/alice"
-	// "snippetbox.tmgasek.net/ui"
 )
 
 func (app *application) routes() http.Handler {
@@ -19,6 +18,7 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/", app.home)
 	router.HandlerFunc(http.MethodGet, "/user/login", app.userLogin)
+	router.HandlerFunc(http.MethodPost, "/user/login", app.userLoginPost)
 
 	router.HandlerFunc(http.MethodGet, "/user/signup", app.userSignup)
 	router.HandlerFunc(http.MethodPost, "/user/signup", app.userSignupPost)
