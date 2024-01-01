@@ -55,7 +55,8 @@ func (app *application) render(
 // returns pointer to templateData struct inited with curr year.
 func (app *application) newTemplateData(r *http.Request) *templateData {
 	return &templateData{
-		CurrentYear: time.Now().Year(),
+		CurrentYear:     time.Now().Year(),
+		IsAuthenticated: app.isAuthenticated(r),
 	}
 }
 
@@ -108,16 +109,14 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Change session ID. Good practice to do when auth / privilege state changes.
-	// err = app.sessionManager.RenewToken(r.Context())
-	// if err != nil {
-	// 	app.serverError(w, err)
-	// 	return
-	// }
+	err = app.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 
 	// Add ID of current user to session, so they are now "logged in".
-	// app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
-
-	app.infoLog.Printf("!!!! User %d logged in", id)
+	app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
@@ -175,7 +174,20 @@ func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// app.sessionManager.Put(r.Context(), "flash", "Signup successful! Please login.")
+	app.sessionManager.Put(r.Context(), "flash", "Signup successful! Please login.")
 
 	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+}
+
+func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
+	err := app.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.sessionManager.Remove(r.Context(), "authenticatedUserID")
+	app.sessionManager.Put(r.Context(), "flash", "Log out successful!")
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

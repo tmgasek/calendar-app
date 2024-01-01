@@ -13,6 +13,9 @@ import (
 	"github.com/go-playground/form/v4"
 	_ "github.com/lib/pq"
 	"github.com/tmgasek/calendar-app/internal/data"
+
+	"github.com/alexedwards/scs/postgresstore"
+	"github.com/alexedwards/scs/v2"
 )
 
 // Struct to hold all config settings for the app.
@@ -30,11 +33,12 @@ type config struct {
 
 // App struct to hold the app-wide dependencies.
 type application struct {
-	errorLog      *log.Logger
-	infoLog       *log.Logger
-	templateCache map[string]*template.Template
-	formDecoder   *form.Decoder
-	models        data.Models
+	errorLog       *log.Logger
+	infoLog        *log.Logger
+	templateCache  map[string]*template.Template
+	formDecoder    *form.Decoder
+	models         data.Models
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -70,12 +74,18 @@ func main() {
 
 	formDecoder := form.NewDecoder()
 
+	sessionManager := scs.New()
+	sessionManager.Store = postgresstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
+	sessionManager.Cookie.Secure = true
+
 	app := &application{
-		errorLog:      errorLog,
-		infoLog:       infoLog,
-		templateCache: templateCache,
-		formDecoder:   formDecoder,
-		models:        data.NewModels(db),
+		errorLog:       errorLog,
+		infoLog:        infoLog,
+		models:         data.NewModels(db),
+		templateCache:  templateCache,
+		formDecoder:    formDecoder,
+		sessionManager: sessionManager,
 	}
 
 	srv := &http.Server{

@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/julienschmidt/httprouter"
+	"github.com/justinas/alice"
 	"net/http"
-	// "github.com/justinas/alice"
 )
 
 func (app *application) routes() http.Handler {
@@ -16,12 +16,21 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/ping", ping)
 
-	router.HandlerFunc(http.MethodGet, "/", app.home)
-	router.HandlerFunc(http.MethodGet, "/user/login", app.userLogin)
-	router.HandlerFunc(http.MethodPost, "/user/login", app.userLoginPost)
+	// For dynamic routes.
+	dynamic := alice.New(app.sessionManager.LoadAndSave, app.authenticate)
 
-	router.HandlerFunc(http.MethodGet, "/user/signup", app.userSignup)
-	router.HandlerFunc(http.MethodPost, "/user/signup", app.userSignupPost)
+	router.Handler(http.MethodGet, "/", dynamic.ThenFunc(app.home))
+	router.Handler(http.MethodGet, "/user/signup", dynamic.ThenFunc(app.userSignup))
+	router.Handler(http.MethodPost, "/user/signup", dynamic.ThenFunc(app.userSignupPost))
+	router.Handler(http.MethodGet, "/user/login", dynamic.ThenFunc(app.userLogin))
+	router.Handler(http.MethodPost, "/user/login", dynamic.ThenFunc(app.userLoginPost))
 
-	return router
+	// Protected application routes.
+	protected := dynamic.Append(app.requireAuthentication)
+	router.Handler(http.MethodPost, "/user/logout", protected.ThenFunc(app.userLogoutPost))
+
+	// Create a new middleware chain.
+	standard := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
+
+	return standard.Then(router)
 }
