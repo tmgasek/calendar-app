@@ -10,5 +10,11 @@ import (
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
 
+	// create wrapper around our NotFound() helper.
+	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		app.notFound(w)
+	})
+
+	router.HandlerFunc(http.MethodGet, "/ping", ping)
 	return router
 }
