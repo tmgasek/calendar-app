@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/tmgasek/calendar-app/internal/data"
 	"github.com/tmgasek/calendar-app/internal/validator"
@@ -50,14 +49,6 @@ func (app *application) render(
 	w.WriteHeader(status)
 
 	buf.WriteTo(w)
-}
-
-// returns pointer to templateData struct inited with curr year.
-func (app *application) newTemplateData(r *http.Request) *templateData {
-	return &templateData{
-		CurrentYear:     time.Now().Year(),
-		IsAuthenticated: app.isAuthenticated(r),
-	}
 }
 
 type userLoginForm struct {

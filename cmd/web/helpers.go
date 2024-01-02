@@ -5,9 +5,21 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
+	"time"
 
 	"github.com/go-playground/form/v4"
+	"github.com/justinas/nosurf"
 )
+
+// returns pointer to templateData struct inited with curr year.
+func (app *application) newTemplateData(r *http.Request) *templateData {
+	return &templateData{
+		CurrentYear:     time.Now().Year(),
+		IsAuthenticated: app.isAuthenticated(r),
+		Flash:           app.sessionManager.PopString(r.Context(), "flash"),
+		CSRFToken:       nosurf.Token(r),
+	}
+}
 
 // write error msg and stack trace to errorLog, send generic 500 res to user
 func (app *application) serverError(w http.ResponseWriter, err error) {
