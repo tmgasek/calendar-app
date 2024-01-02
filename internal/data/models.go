@@ -13,12 +13,14 @@ var (
 )
 
 type Models struct {
-	Users UserModel
+	Users        UserModel
+	GoogleTokens GoogleTokenModel
 }
 
 // For ease of use
 func NewModels(db *sql.DB) Models {
 	return Models{
-		Users: UserModel{DB: db},
+		Users:        UserModel{DB: db},
+		GoogleTokens: GoogleTokenModel{DB: db},
 	}
 }

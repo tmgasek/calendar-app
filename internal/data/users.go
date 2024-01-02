@@ -5,15 +5,10 @@ import (
 	"database/sql"
 	"errors"
 
-	// "errors"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
-
-// var (
-// 	ErrDuplicateEmail = errors.New("duplicate email")
-// )
 
 type UserModel struct {
 	DB *sql.DB
