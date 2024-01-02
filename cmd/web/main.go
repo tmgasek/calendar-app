@@ -13,6 +13,9 @@ import (
 	"github.com/go-playground/form/v4"
 	_ "github.com/lib/pq"
 	"github.com/tmgasek/calendar-app/internal/data"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/calendar/v3"
 
 	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
@@ -33,16 +36,16 @@ type config struct {
 
 // App struct to hold the app-wide dependencies.
 type application struct {
-	errorLog       *log.Logger
-	infoLog        *log.Logger
-	templateCache  map[string]*template.Template
-	formDecoder    *form.Decoder
-	models         data.Models
-	sessionManager *scs.SessionManager
+	errorLog          *log.Logger
+	infoLog           *log.Logger
+	templateCache     map[string]*template.Template
+	formDecoder       *form.Decoder
+	models            data.Models
+	sessionManager    *scs.SessionManager
+	googleOAuthConfig *oauth2.Config
 }
 
 func main() {
-
 	var cfg config
 
 	flag.StringVar(&cfg.addr, "addr", ":8080", "HTTP network address")
@@ -62,8 +65,6 @@ func main() {
 	if err != nil {
 		errorLog.Fatal(err)
 	}
-
-	infoLog.Printf("Connected to database!!!!!")
 
 	defer db.Close()
 
@@ -132,4 +133,19 @@ func openDB(cfg config) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func (app *application) initGoogleAuthConfig() {
+	b, err := os.ReadFile("credentials.json")
+	if err != nil {
+		log.Fatalf("Unable to read client secret file: %v", err)
+	}
+
+	// If modifying these scopes, delete your previously saved token.json.
+	config, err := google.ConfigFromJSON(b, calendar.CalendarScope)
+	if err != nil {
+		log.Fatalf("Unable to parse client secret file to config: %v", err)
+	}
+
+	app.googleOAuthConfig = config
 }
