@@ -45,7 +45,7 @@ func main() {
 
 	var cfg config
 
-	flag.StringVar(&cfg.addr, "addr", ":4000", "HTTP network address")
+	flag.StringVar(&cfg.addr, "addr", ":8080", "HTTP network address")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 
 	flag.StringVar(&cfg.db.dsn, "db-dsn", "", "Postgresql DSN")

@@ -18,6 +18,7 @@ func (app *application) newTemplateData(r *http.Request) *templateData {
 		IsAuthenticated: app.isAuthenticated(r),
 		Flash:           app.sessionManager.PopString(r.Context(), "flash"),
 		CSRFToken:       nosurf.Token(r),
+		UserId:          app.sessionManager.GetInt(r.Context(), "authenticatedUserID"),
 	}
 }
 
