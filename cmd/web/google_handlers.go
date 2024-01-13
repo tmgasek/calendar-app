@@ -10,8 +10,6 @@ import (
 	"google.golang.org/api/option"
 )
 
-var googleOauthConfig *oauth2.Config
-
 func (app *application) linkGoogleAccount(w http.ResponseWriter, r *http.Request) {
 	// Get the user from the request context.
 	// Get the Google OAuth2 URL from the provider, then add some additional
@@ -23,7 +21,7 @@ func (app *application) linkGoogleAccount(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	url := googleOauthConfig.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+	url := app.googleOAuthConfig.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	// print out url
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
@@ -39,7 +37,7 @@ func (app *application) handleGoogleCalendarCallback(w http.ResponseWriter, r *h
 	}
 
 	code := r.URL.Query().Get("code")
-	token, err := googleOauthConfig.Exchange(ctx, code)
+	token, err := app.googleOAuthConfig.Exchange(ctx, code)
 	if err != nil {
 		// Handle error.
 		http.Error(w, "Failed to exchange token: "+err.Error(), http.StatusInternalServerError)
@@ -70,15 +68,17 @@ func (app *application) showEvents(w http.ResponseWriter, r *http.Request) {
 	// Refresh the token if it's expired
 	if app.models.GoogleTokens.Expired(token) {
 		app.infoLog.Println("*** Token expired, refreshing")
-		token, err = app.models.GoogleTokens.RefreshGoogleToken(userID, googleOauthConfig, token)
+		refreshedToken, err := app.models.GoogleTokens.RefreshGoogleToken(userID, app.googleOAuthConfig, token)
 		if err != nil {
 			app.serverError(w, err)
 			return
 		}
+		app.infoLog.Println("*** Refreshed token: ", refreshedToken)
+		token = refreshedToken
 	}
 
 	// Use the token to create a Google Calendar service client
-	client := googleOauthConfig.Client(context.Background(), token)
+	client := app.googleOAuthConfig.Client(context.Background(), token)
 	srv, err := calendar.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
 		app.serverError(w, err)

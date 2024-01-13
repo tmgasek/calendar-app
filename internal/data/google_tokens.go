@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -57,9 +58,15 @@ func (m *GoogleTokenModel) Expired(token *oauth2.Token) bool {
 }
 
 func (m *GoogleTokenModel) RefreshGoogleToken(userID int, config *oauth2.Config, token *oauth2.Token) (*oauth2.Token, error) {
+	fmt.Printf("token: %v\n", token)
 	if !token.Valid() {
 		newToken, err := config.TokenSource(context.Background(), token).Token()
+
+		fmt.Printf("newToken: %v\n", newToken)
+
 		if err != nil {
+			// Does this mean the expiry token is invalid?
+			// TODO: redirect to auth again?
 			return nil, err
 		}
 

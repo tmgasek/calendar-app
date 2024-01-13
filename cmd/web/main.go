@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"flag"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -98,6 +99,8 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 	}
 
+	app.initGoogleAuthConfig()
+
 	infoLog.Printf("Starting server on %s", cfg.addr)
 	err = srv.ListenAndServe()
 	errorLog.Fatal(err)
@@ -147,5 +150,6 @@ func (app *application) initGoogleAuthConfig() {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
 
+	fmt.Printf("config: %v\n", config)
 	app.googleOAuthConfig = config
 }
