@@ -65,7 +65,7 @@ func (m *GoogleTokenModel) RefreshGoogleToken(userID int, config *oauth2.Config,
 		fmt.Printf("newToken: %v\n", newToken)
 
 		if err != nil {
-			// Does this mean the expiry token is invalid?
+			// Does this mean the expiry token is invalid? Unable to refresh token.
 			// TODO: redirect to auth again?
 			return nil, err
 		}

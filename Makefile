@@ -39,6 +39,10 @@ db/migrations/up: confirm
 	@echo 'Running up migrations...'
 	migrate -path ./migrations -database ${CALENDAR_APP_DB_DSN} up
 
+.PHONY: db/migrations/down
+db/migrations/down: confirm
+	@echo 'Running down migrations...'
+	migrate -path ./migrations -database ${CALENDAR_APP_DB_DSN} down
 
 
 # ==================================================================================== #

@@ -65,19 +65,22 @@ func (app *application) showEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Refresh the token if it's expired
-	if app.models.GoogleTokens.Expired(token) {
-		app.infoLog.Println("*** Token expired, refreshing")
-		refreshedToken, err := app.models.GoogleTokens.RefreshGoogleToken(userID, app.googleOAuthConfig, token)
-		if err != nil {
-			app.serverError(w, err)
-			return
-		}
-		app.infoLog.Println("*** Refreshed token: ", refreshedToken)
-		token = refreshedToken
-	}
+	//!!!!!!!!!!!!!!  Maybe i don't need to refresh the token manually???
+
+	// // Refresh the token if it's expired
+	// if app.models.GoogleTokens.Expired(token) {
+	// 	app.infoLog.Println("*** Token expired, refreshing")
+	// 	refreshedToken, err := app.models.GoogleTokens.RefreshGoogleToken(userID, app.googleOAuthConfig, token)
+	// 	if err != nil {
+	// 		app.serverError(w, err)
+	// 		return
+	// 	}
+	// 	app.infoLog.Println("*** Refreshed token: ", refreshedToken)
+	// 	token = refreshedToken
+	// }
 
 	// Use the token to create a Google Calendar service client
+	// This auto refreshes the token if it's expired.
 	client := app.googleOAuthConfig.Client(context.Background(), token)
 	srv, err := calendar.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
@@ -106,4 +109,9 @@ func (app *application) showEvents(w http.ResponseWriter, r *http.Request) {
 			app.infoLog.Printf("%v (%v)\n", item.Summary, date)
 		}
 	}
+
+	// Save the events data to the database.
+
+	// data := app.newTemplateData(r)
+	// app.render(w, http.StatusOK, "view-events.tmpl", data)
 }
