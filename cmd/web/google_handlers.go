@@ -48,6 +48,9 @@ func (app *application) handleGoogleCalendarCallback(w http.ResponseWriter, r *h
 
 	// Save token to the database.
 	app.models.GoogleTokens.SaveToken(userID, token)
+
+	// Redirect back to homepage.
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (app *application) showEvents(w http.ResponseWriter, r *http.Request) {

@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
-	"net/http"
+	"golang.org/x/oauth2"
 )
 
 func (app *application) routes() http.Handler {
@@ -30,9 +34,15 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodPost, "/user/logout", protected.ThenFunc(app.userLogoutPost))
 
 	router.Handler(http.MethodGet, "/user/profile", protected.ThenFunc(app.userProfile))
-	router.Handler(http.MethodGet, "/google/link", protected.ThenFunc(app.linkGoogleAccount))
 
+	// Google OAuth routes.
+	router.Handler(http.MethodGet, "/google/link", protected.ThenFunc(app.linkGoogleAccount))
 	router.Handler(http.MethodGet, "/auth/callback", protected.ThenFunc(app.handleGoogleCalendarCallback))
+
+	// Microsoft OAuth routes.
+	router.Handler(http.MethodGet, "/auth/microsoft", protected.ThenFunc(redirectToMicrosoftLogin))
+	router.Handler(http.MethodGet, "/auth/microsoft-callback", protected.ThenFunc(app.handleMicrosoftAuthCallback))
+	router.Handler(http.MethodPost, "/auth/microsoft-callback", protected.ThenFunc(app.handleMicrosoftAuthCallback))
 
 	router.Handler(http.MethodGet, "/user/events", protected.ThenFunc(app.showEvents))
 
@@ -40,4 +50,27 @@ func (app *application) routes() http.Handler {
 	standard := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
 
 	return standard.Then(router)
+}
+
+func redirectToMicrosoftLogin(w http.ResponseWriter, r *http.Request) {
+	url := microsoftOauth2Config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
+
+func (app *application) handleMicrosoftAuthCallback(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("MICROSOFT CALLBACK")
+	ctx := context.Background()
+	code := r.URL.Query().Get("code")
+	app.infoLog.Printf("MICROSOFT CODE: %v\n", code)
+
+	token, err := microsoftOauth2Config.Exchange(ctx, code)
+	if err != nil {
+		app.errorLog.Printf("MICROSOFT ERROR: %v\n", err)
+		// Handle error
+		return
+	}
+
+	app.infoLog.Printf("MICROSOFT Token: %v\n", token)
+
+	// Use token to access user's Outlook Calendar...
 }

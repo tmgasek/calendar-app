@@ -16,6 +16,7 @@ import (
 	"github.com/tmgasek/calendar-app/internal/data"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/microsoft"
 	"google.golang.org/api/calendar/v3"
 
 	"github.com/alexedwards/scs/postgresstore"
@@ -101,6 +102,8 @@ func main() {
 
 	app.initGoogleAuthConfig()
 
+	fmt.Printf("microsoftOauth2Config: %v\n", microsoftOauth2Config)
+
 	infoLog.Printf("Starting server on %s", cfg.addr)
 	err = srv.ListenAndServe()
 	errorLog.Fatal(err)
@@ -150,6 +153,5 @@ func (app *application) initGoogleAuthConfig() {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
 
-	fmt.Printf("config: %v\n", config)
 	app.googleOAuthConfig = config
 }
