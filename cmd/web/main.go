@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
+	"github.com/joho/godotenv"
 )
 
 // Struct to hold all config settings for the app.
@@ -45,10 +45,17 @@ type application struct {
 	models            data.Models
 	sessionManager    *scs.SessionManager
 	googleOAuthConfig *oauth2.Config
+	azureOAuth2Config *oauth2.Config
 }
 
 func main() {
 	var cfg config
+
+	// Load in .env file.
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	flag.StringVar(&cfg.addr, "addr", ":8080", "HTTP network address")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
@@ -101,8 +108,7 @@ func main() {
 	}
 
 	app.initGoogleAuthConfig()
-
-	fmt.Printf("microsoftOauth2Config: %v\n", microsoftOauth2Config)
+	app.initAzureAuthConfig()
 
 	infoLog.Printf("Starting server on %s", cfg.addr)
 	err = srv.ListenAndServe()
@@ -139,6 +145,18 @@ func openDB(cfg config) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+// initAzureAuthConfig initializes the oauth2 config for Azure and
+// stores it in the app struct.
+func (app *application) initAzureAuthConfig() {
+	app.azureOAuth2Config = &oauth2.Config{
+		ClientID:     os.Getenv("AZURE_CLIENT_ID"),
+		ClientSecret: os.Getenv("AZURE_CLIENT_SECRET"),
+		RedirectURL:  os.Getenv("AZURE_REDIRECT_URL"),
+		Scopes:       []string{"https://graph.microsoft.com/Calendars.ReadWrite"},
+		Endpoint:     microsoft.AzureADEndpoint("common"),
+	}
 }
 
 func (app *application) initGoogleAuthConfig() {

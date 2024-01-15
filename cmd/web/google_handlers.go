@@ -47,7 +47,11 @@ func (app *application) handleGoogleCalendarCallback(w http.ResponseWriter, r *h
 	app.infoLog.Println("Token: ", token)
 
 	// Save token to the database.
-	app.models.GoogleTokens.SaveToken(userID, token)
+	err = app.models.GoogleTokens.SaveToken(userID, token)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 
 	// Redirect back to homepage.
 	http.Redirect(w, r, "/", http.StatusSeeOther)

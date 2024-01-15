@@ -21,6 +21,10 @@ confirm:
 run/web:
 	go run ./cmd/web -db-dsn=${CALENDAR_APP_DB_DSN}
 
+## lint: run the linter
+.PHONY: lint
+lint:
+	golangci-lint run ./...
 
 ## db/psql: connect to db using psql
 .PHONY: db/psql
@@ -39,10 +43,12 @@ db/migrations/up: confirm
 	@echo 'Running up migrations...'
 	migrate -path ./migrations -database ${CALENDAR_APP_DB_DSN} up
 
+## db/migrations/down: apply all down db migrations
 .PHONY: db/migrations/down
 db/migrations/down: confirm
 	@echo 'Running down migrations...'
 	migrate -path ./migrations -database ${CALENDAR_APP_DB_DSN} down
+
 
 
 # ==================================================================================== #

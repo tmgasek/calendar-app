@@ -2,3 +2,4 @@ bin/*
 tmp/*
 credentials.json
 secrets.txt
+.env

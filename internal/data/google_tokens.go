@@ -71,7 +71,11 @@ func (m *GoogleTokenModel) RefreshGoogleToken(userID int, config *oauth2.Config,
 		}
 
 		// Save the new token to the database.
-		m.SaveToken(userID, newToken)
+		err = m.SaveToken(userID, newToken)
+		if err != nil {
+			return nil, err
+		}
+
 		return newToken, nil
 	}
 
