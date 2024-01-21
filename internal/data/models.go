@@ -15,6 +15,7 @@ var (
 type Models struct {
 	Users        UserModel
 	GoogleTokens GoogleTokenModel
+	Events       EventModel
 }
 
 // For ease of use
@@ -22,5 +23,6 @@ func NewModels(db *sql.DB) Models {
 	return Models{
 		Users:        UserModel{DB: db},
 		GoogleTokens: GoogleTokenModel{DB: db},
+		Events:       EventModel{DB: db},
 	}
 }

@@ -167,6 +167,14 @@ func (app *application) initGoogleAuthConfig() {
 
 	// If modifying these scopes, delete your previously saved token.json.
 	config, err := google.ConfigFromJSON(b, calendar.CalendarScope)
+
+	// app.googleOAuthConfig = &oauth2.Config{
+	// 	ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+	// 	ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+	// 	RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
+	// 	Scopes:       []string{calendar.CalendarScope},
+	// }
+
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}

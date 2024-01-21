@@ -46,6 +46,7 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/auth/microsoft-callback", protected.ThenFunc(app.handleMicrosoftAuthCallback))
 
 	router.Handler(http.MethodGet, "/user/events", protected.ThenFunc(app.showEvents))
+	router.Handler(http.MethodGet, "/user/outlook/events", protected.ThenFunc(app.getOutlookEvents))
 
 	// Create a new middleware chain.
 	standard := alice.New(app.recoverPanic, app.logRequest, secureHeaders)

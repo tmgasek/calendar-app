@@ -8,6 +8,8 @@ import (
 	"golang.org/x/oauth2"
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
+
+	"github.com/tmgasek/calendar-app/internal/data"
 )
 
 func (app *application) linkGoogleAccount(w http.ResponseWriter, r *http.Request) {
@@ -108,17 +110,55 @@ func (app *application) showEvents(w http.ResponseWriter, r *http.Request) {
 		app.infoLog.Println("No upcoming events found.")
 	} else {
 		for _, item := range events.Items {
-			date := item.Start.DateTime
-			if date == "" {
-				date = item.Start.Date
+			event := convertGoogleEventToEvent(userID, item)
+
+			err := app.models.Events.Insert(event)
+			if err != nil {
+				app.serverError(w, err)
+				return
 			}
 
-			app.infoLog.Printf("%v (%v)\n", item.Summary, date)
+			app.infoLog.Printf("Event saved: %v (%v)\n", event.Title, event.StartDateTime)
 		}
 	}
+}
 
-	// Save the events data to the database.
+func convertGoogleEventToEvent(userID int, googleEvent *calendar.Event) *data.Event {
+	// Initialize a new instance of Event
+	var event data.Event
 
-	// data := app.newTemplateData(r)
-	// app.render(w, http.StatusOK, "view-events.tmpl", data)
+	// Assign Google event fields to your Event struct fields
+	event.UserID = userID
+	event.Title = googleEvent.Summary
+	event.Description = googleEvent.Description
+
+	event.StartDateTime = parseTime(googleEvent.Start.DateTime, googleEvent.Start.Date)
+	event.EndDateTime = parseTime(googleEvent.End.DateTime, googleEvent.End.Date)
+
+	event.CreatedDateTime = parseRFC3339Time(googleEvent.Created)
+	event.UpdatedDateTime = parseRFC3339Time(googleEvent.Updated)
+
+	return &event
+}
+
+// Helper function to parse time in RFC3339 format
+func parseRFC3339Time(timeStr string) time.Time {
+	t, err := time.Parse(time.RFC3339, timeStr)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
+
+// Helper function to parse Google event date and dateTime
+func parseTime(dateTime, date string) time.Time {
+	if dateTime != "" {
+		return parseRFC3339Time(dateTime)
+	}
+	if date != "" {
+		// Assuming date is in "YYYY-MM-DD" format
+		t, _ := time.Parse("2006-01-02", date)
+		return t
+	}
+	return time.Time{}
 }
