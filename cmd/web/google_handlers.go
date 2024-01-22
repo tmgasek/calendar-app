@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -110,35 +111,41 @@ func (app *application) showEvents(w http.ResponseWriter, r *http.Request) {
 		app.infoLog.Println("No upcoming events found.")
 	} else {
 		for _, item := range events.Items {
+			// Convert from Google event to own unified Event struct.
 			event := convertGoogleEventToEvent(userID, item)
 
+			// Save event to the database.
 			err := app.models.Events.Insert(event)
 			if err != nil {
 				app.serverError(w, err)
 				return
 			}
 
-			app.infoLog.Printf("Event saved: %v (%v)\n", event.Title, event.StartDateTime)
+			app.infoLog.Printf("Event saved: %v (%v)\n", item.Summary, item.Start.DateTime)
 		}
 	}
 }
 
 func convertGoogleEventToEvent(userID int, googleEvent *calendar.Event) *data.Event {
-	// Initialize a new instance of Event
-	var event data.Event
+	event := &data.Event{
+		UserID:          userID,
+		Provider:        "Google",
+		ProviderEventID: googleEvent.Id,
+		Title:           googleEvent.Summary,
+		Description:     googleEvent.Description,
+		StartTime:       parseTime(googleEvent.Start.DateTime, googleEvent.Start.Date),
+		EndTime:         parseTime(googleEvent.End.DateTime, googleEvent.End.Date),
+		Location:        googleEvent.Location,
+		IsAllDay:        googleEvent.Start.Date != "",
+		Status:          googleEvent.Status,
+		CreatedAt:       parseRFC3339Time(googleEvent.Created),
+		UpdatedAt:       parseRFC3339Time(googleEvent.Updated),
+		TimeZone:        googleEvent.Start.TimeZone, // Assuming Start and End TimeZones are the same
+		Visibility:      googleEvent.Visibility,
+		Recurrence:      strings.Join(googleEvent.Recurrence, ","),
+	}
 
-	// Assign Google event fields to your Event struct fields
-	event.UserID = userID
-	event.Title = googleEvent.Summary
-	event.Description = googleEvent.Description
-
-	event.StartDateTime = parseTime(googleEvent.Start.DateTime, googleEvent.Start.Date)
-	event.EndDateTime = parseTime(googleEvent.End.DateTime, googleEvent.End.Date)
-
-	event.CreatedDateTime = parseRFC3339Time(googleEvent.Created)
-	event.UpdatedDateTime = parseRFC3339Time(googleEvent.Updated)
-
-	return &event
+	return event
 }
 
 // Helper function to parse time in RFC3339 format

@@ -4,7 +4,7 @@ CREATE TABLE events (
         CONSTRAINT fk_user_id FOREIGN KEY (user_id)
         REFERENCES users(id) ON DELETE CASCADE,
     provider VARCHAR(255) NOT NULL,
-    provider_event_id VARCHAR(255),
+    provider_event_id VARCHAR(255) UNIQUE NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     start_time TIMESTAMP WITH TIME ZONE NOT NULL,
