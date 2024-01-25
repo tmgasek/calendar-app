@@ -28,10 +28,24 @@ type EventModel struct {
 	DB *sql.DB
 }
 
+// Upserts the event.
 func (m *EventModel) Insert(event *Event) error {
 	query := `
-        INSERT INTO events (user_id, provider, provider_event_id, title, description, start_time, end_time, location, is_all_day, status, created_at, updated_at, time_zone, visibility, recurrence)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+		INSERT INTO events (user_id, provider, provider_event_id, title, description, start_time, end_time, location, is_all_day, status, created_at, updated_at, time_zone, visibility, recurrence)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+		ON CONFLICT (provider_event_id)
+		DO UPDATE SET 
+			title = EXCLUDED.title, 
+			description = EXCLUDED.description, 
+			start_time = EXCLUDED.start_time, 
+			end_time = EXCLUDED.end_time, 
+			location = EXCLUDED.location, 
+			is_all_day = EXCLUDED.is_all_day, 
+			status = EXCLUDED.status, 
+			updated_at = EXCLUDED.updated_at, 
+			time_zone = EXCLUDED.time_zone, 
+			visibility = EXCLUDED.visibility, 
+			recurrence = EXCLUDED.recurrence;
     `
 	_, err := m.DB.Exec(query, event.UserID, event.Provider, event.ProviderEventID, event.Title, event.Description, event.StartTime, event.EndTime, event.Location, event.IsAllDay, event.Status, event.CreatedAt, event.UpdatedAt, event.TimeZone, event.Visibility, event.Recurrence)
 
