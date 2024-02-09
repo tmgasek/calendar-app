@@ -13,6 +13,45 @@ import (
 	"golang.org/x/oauth2"
 )
 
+/*
+   Home and Static Content:
+       GET /: Home page.
+       GET /static/*filepath: Serve static files.
+
+   User Authentication:
+       GET /signup: Display signup form.
+       POST /signup: Process signup form.
+       GET /login: Display login form.
+       POST /login: Process login form.
+       POST /logout: Handle logout action.
+
+   User Profile Management:
+       GET /profile: Display user's profile.
+       GET /profile/edit: Display form to edit profile.
+       POST /profile/edit: Process profile edit form.
+
+   Calendar Integration (OAuth):
+       GET /oauth/google/link: Display page to link Google account.
+       GET /oauth/google/callback: Handle Google OAuth callback.
+       GET /oauth/microsoft/link: Display page to link Microsoft account.
+       GET /oauth/microsoft/callback: Handle Microsoft OAuth callback.
+
+   Event Management:
+       GET /events: Display list of user's events.
+       GET /events/new: Display form to create a new event.
+       POST /events/new: Process new event form.
+       GET /events/google: Display Google events.
+       GET /events/microsoft: Display Microsoft/Outlook events.
+
+   Viewing Other Users' Calendars:
+       GET /users/:id/calendar: View another user's calendar.
+
+   Appointment Booking:
+       GET /appointments/new: Display form to book an appointment.
+       POST /appointments/new: Process appointment booking form.
+       GET /appointments/:id: View appointment details.
+*/
+
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
 

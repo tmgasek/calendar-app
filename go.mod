@@ -5,7 +5,6 @@ go 1.21.5
 require (
 	github.com/alexedwards/scs/postgresstore v0.0.0-20231113091146-cef4b05350c8
 	github.com/alexedwards/scs/v2 v2.7.0
-	github.com/go-playground/form v3.1.4+incompatible
 	github.com/go-playground/form/v4 v4.2.1
 	github.com/joho/godotenv v1.5.1
 	github.com/julienschmidt/httprouter v1.3.0
@@ -41,5 +40,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231127180814-3a041ad873d4 // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
-	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )

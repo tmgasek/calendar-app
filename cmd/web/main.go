@@ -137,8 +137,8 @@ func openDB(cfg config) (*sql.DB, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Establish a new conn to the db passing in ctx. If conn couldn't be established
-	// successfully withing 5 secs, this will return err.
+	// Establish a new conn to the db passing in ctx. If conn couldn't be
+	// established successfully withing 5 secs, this will return err.
 	err = db.PingContext(ctx)
 	if err != nil {
 		return nil, err
