@@ -77,7 +77,7 @@ func (app *application) routes() http.Handler {
 
 	// Google OAuth routes.
 	router.Handler(http.MethodGet, "/google/link", protected.ThenFunc(app.linkGoogleAccount))
-	router.Handler(http.MethodGet, "/auth/callback", protected.ThenFunc(app.handleGoogleCalendarCallback))
+	router.Handler(http.MethodGet, "/oauth/google/callback", protected.ThenFunc(app.handleGoogleCalendarCallback))
 
 	// Microsoft OAuth routes.
 	router.Handler(http.MethodGet, "/auth/azure/link", protected.ThenFunc(app.redirectToMicrosoftLogin))
