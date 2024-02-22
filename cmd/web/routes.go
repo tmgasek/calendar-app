@@ -76,12 +76,12 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/user/profile", protected.ThenFunc(app.userProfile))
 
 	// Google OAuth routes.
-	router.Handler(http.MethodGet, "/google/link", protected.ThenFunc(app.linkGoogleAccount))
+	router.Handler(http.MethodGet, "/oauth/google/link", protected.ThenFunc(app.linkGoogleAccount))
 	router.Handler(http.MethodGet, "/oauth/google/callback", protected.ThenFunc(app.handleGoogleCalendarCallback))
 
 	// Microsoft OAuth routes.
-	router.Handler(http.MethodGet, "/auth/azure/link", protected.ThenFunc(app.redirectToMicrosoftLogin))
-	router.Handler(http.MethodGet, "/auth/microsoft-callback", protected.ThenFunc(app.handleMicrosoftAuthCallback))
+	router.Handler(http.MethodGet, "/oauth/microsoft/link", protected.ThenFunc(app.redirectToMicrosoftLogin))
+	router.Handler(http.MethodGet, "/oauth/microsoft/callback", protected.ThenFunc(app.handleMicrosoftAuthCallback))
 
 	router.Handler(http.MethodGet, "/user/events", protected.ThenFunc(app.showEvents))
 	router.Handler(http.MethodGet, "/user/outlook/events", protected.ThenFunc(app.getOutlookEvents))
