@@ -9,37 +9,40 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type GoogleTokenModel struct {
+type AuthTokenModel struct {
 	DB *sql.DB
 }
 
-type GoogleToken struct {
+type AuthToken struct {
 	UserID       int
 	AccessToken  string
 	RefreshToken string
 	TokenType    string
 	Expiry       time.Time
 	Scope        string
+	AuthProvider string
 }
 
-func (m *GoogleTokenModel) SaveToken(userID int, token *oauth2.Token) error {
+func (m *AuthTokenModel) SaveToken(userID int, authProvider string, token *oauth2.Token) error {
 	query := `
-        INSERT INTO google_tokens (
-		user_id,
-		access_token,
-		refresh_token,
-		token_type,
-		expiry,
-		scope
-	) 
-        VALUES ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (user_id) 
+        INSERT INTO auth_tokens (
+			user_id,
+            auth_provider,
+            access_token,
+            refresh_token,
+            token_type,
+            expiry,
+            scope
+        ) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (user_id, auth_provider) 
         DO UPDATE SET access_token = EXCLUDED.access_token, refresh_token = EXCLUDED.refresh_token, token_type = EXCLUDED.token_type, expiry = EXCLUDED.expiry, scope = EXCLUDED.scope;
     `
 
 	_, err := m.DB.Exec(
 		query,
 		userID,
+		authProvider,
 		token.AccessToken,
 		token.RefreshToken,
 		token.TokenType,
@@ -52,10 +55,10 @@ func (m *GoogleTokenModel) SaveToken(userID int, token *oauth2.Token) error {
 	return nil
 }
 
-func (m *GoogleTokenModel) Token(userID int) (*oauth2.Token, error) {
-	var token GoogleToken
-	query := `SELECT access_token, refresh_token, token_type, expiry FROM google_tokens WHERE user_id = $1`
-	row := m.DB.QueryRow(query, userID)
+func (m *AuthTokenModel) Token(userID int, authProvider string) (*oauth2.Token, error) {
+	var token AuthToken
+	query := `SELECT access_token, refresh_token, token_type, expiry FROM auth_tokens WHERE user_id = $1 AND auth_provider = $2`
+	row := m.DB.QueryRow(query, userID, authProvider)
 	err := row.Scan(&token.AccessToken, &token.RefreshToken, &token.TokenType, &token.Expiry)
 	if err != nil {
 		return nil, err
@@ -68,11 +71,11 @@ func (m *GoogleTokenModel) Token(userID int) (*oauth2.Token, error) {
 	}, nil
 }
 
-func (m *GoogleTokenModel) Expired(token *oauth2.Token) bool {
+func (m *AuthTokenModel) Expired(token *oauth2.Token) bool {
 	return token.Expiry.Before(time.Now())
 }
 
-func (m *GoogleTokenModel) RefreshGoogleToken(userID int, config *oauth2.Config, token *oauth2.Token) (*oauth2.Token, error) {
+func (m *AuthTokenModel) RefreshGoogleToken(userID int, config *oauth2.Config, token *oauth2.Token) (*oauth2.Token, error) {
 	fmt.Printf("token: %v\n", token)
 	if !token.Valid() {
 		newToken, err := config.TokenSource(context.Background(), token).Token()
@@ -86,7 +89,7 @@ func (m *GoogleTokenModel) RefreshGoogleToken(userID int, config *oauth2.Config,
 		}
 
 		// Save the new token to the database.
-		err = m.SaveToken(userID, newToken)
+		err = m.SaveToken(userID, "google", newToken)
 		if err != nil {
 			return nil, err
 		}

@@ -50,7 +50,7 @@ func (app *application) handleGoogleCalendarCallback(w http.ResponseWriter, r *h
 	app.infoLog.Println("Token: ", token)
 
 	// Save token to the database.
-	err = app.models.GoogleTokens.SaveToken(userID, token)
+	err = app.models.AuthTokens.SaveToken(userID, "google", token)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -69,7 +69,7 @@ func (app *application) showEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Retrieve the token from the database
-	token, err := app.models.GoogleTokens.Token(userID)
+	token, err := app.models.AuthTokens.Token(userID, "google")
 	if err != nil {
 		app.serverError(w, err)
 		return
