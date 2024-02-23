@@ -186,5 +186,17 @@ func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
 func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
+	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+
+	// Get the event data
+	events, err := app.models.Events.GetByUserID(userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Printf("events: %v\n", events)
+	data.Events = events
+
 	app.render(w, http.StatusOK, "profile.tmpl", data)
 }

@@ -8,4 +8,41 @@
     <a href="/oauth/google/link">Link google calendar</a>
     <a href="/oauth/microsoft/link">Link outlook calendar</a>
 </div>
+<div>
+    {{ range .Events }}
+    <div>
+        <h2>{{.Title}}</h2>
+        <p>Description: {{.Description}}</p>
+        <p>Start: {{.StartTime}}</p>
+        <p>End: {{.EndTime}}</p>
+        <p>Location: {{.Location}}</p>
+        <p>IsAllDay: {{.IsAllDay}}</p>
+        <p>Status: {{.Status}}</p>
+        <p>Created: {{.CreatedAt}}</p>
+        <p>Updated: {{.UpdatedAt}}</p>
+        <p>Timezone: {{.TimeZone}}</p>
+        <p>Visibility: {{.Visibility}}</p>
+        <p>Recurrence: {{.Recurrence}}</p>
+    </div>
+    {{ end }}
+</div>
 {{end}}
+
+<!-- 
+	ID              int
+	UserID          int
+	Provider        string
+	ProviderEventID string
+	Title           string
+	Description     string
+	StartTime       time.Time
+	EndTime         time.Time
+	Location        string
+	IsAllDay        bool
+	Status          string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	TimeZone        string
+	Visibility      string
+	Recurrence      string
+-->

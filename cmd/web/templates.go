@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/tmgasek/calendar-app/internal/data"
 	"github.com/tmgasek/calendar-app/ui"
 )
 
@@ -16,6 +17,7 @@ type templateData struct {
 	IsAuthenticated bool
 	CSRFToken       string
 	UserId          int
+	Events          []*data.Event
 }
 
 func humanDate(t time.Time) string {
