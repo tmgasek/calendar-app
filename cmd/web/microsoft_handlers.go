@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
 
+	"github.com/tmgasek/calendar-app/internal/data"
 	"golang.org/x/oauth2"
 )
 
@@ -97,6 +99,66 @@ func (app *application) getOutlookEvents(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Unmarshal the response body into the GraphEvent slice
+	var data struct {
+		Value []GraphEvent `json:"value"`
+	}
+	if err := json.Unmarshal(body, &data); err != nil {
+		app.errorLog.Printf("Error unmarshalling response body: %v\n", err)
+		return
+	}
+
+	// Convert the Graph API events to your Event struct and save them
+	for _, graphEvent := range data.Value {
+		event := convertGraphEventToEvent(userID, graphEvent)
+
+		// Save event to the database.
+		err := app.models.Events.Insert(event)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+
+		app.infoLog.Printf("Outlook event saved: %v (%v)\n", event.Title, event.StartTime)
+	}
+
 	// Log the events
 	app.infoLog.Printf("Outlook Calendar Data: %s\n", string(body))
+}
+
+type GraphEvent struct {
+	ID          string        `json:"id"`
+	Subject     string        `json:"subject"`
+	BodyPreview string        `json:"bodyPreview"`
+	Start       GraphTime     `json:"start"`
+	End         GraphTime     `json:"end"`
+	Location    GraphLocation `json:"location"`
+	IsAllDay    bool          `json:"isAllDay"`
+}
+
+type GraphTime struct {
+	DateTime string `json:"dateTime"`
+	TimeZone string `json:"timeZone"`
+}
+
+type GraphLocation struct {
+	DisplayName string `json:"displayName"`
+}
+
+func convertGraphEventToEvent(userID int, graphEvent GraphEvent) *data.Event {
+	startTime, _ := time.Parse(time.RFC3339, graphEvent.Start.DateTime)
+	endTime, _ := time.Parse(time.RFC3339, graphEvent.End.DateTime)
+
+	return &data.Event{
+		UserID:          userID,
+		Provider:        "Microsoft",
+		ProviderEventID: graphEvent.ID,
+		Title:           graphEvent.Subject,
+		Description:     graphEvent.BodyPreview,
+		StartTime:       startTime,
+		EndTime:         endTime,
+		Location:        graphEvent.Location.DisplayName,
+		IsAllDay:        graphEvent.IsAllDay,
+		TimeZone:        graphEvent.Start.TimeZone,
+	}
 }
