@@ -154,7 +154,7 @@ func (app *application) initAzureAuthConfig() {
 		ClientID:     os.Getenv("AZURE_CLIENT_ID"),
 		ClientSecret: os.Getenv("AZURE_CLIENT_SECRET"),
 		RedirectURL:  os.Getenv("AZURE_REDIRECT_URL"),
-		Scopes:       []string{"https://graph.microsoft.com/Calendars.ReadWrite"},
+		Scopes:       []string{"https://graph.microsoft.com/Calendars.ReadWrite", "offline_access"},
 		Endpoint:     microsoft.AzureADEndpoint("common"),
 	}
 }
