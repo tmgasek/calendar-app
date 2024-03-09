@@ -11,13 +11,14 @@ import (
 )
 
 type templateData struct {
-	CurrentYear     int
-	Form            any
-	Flash           string
-	IsAuthenticated bool
-	CSRFToken       string
-	UserId          int
-	Events          []*data.Event
+	CurrentYear        int
+	Form               any
+	Flash              string
+	IsAuthenticated    bool
+	CSRFToken          string
+	UserId             int
+	Events             []*data.Event
+	HourlyAvailability []HourlyAvailability
 }
 
 func humanDate(t time.Time) string {
@@ -28,10 +29,15 @@ func humanDate(t time.Time) string {
 	return t.UTC().Format("02 Jan 2006 at 15:04")
 }
 
+func addOne(i int) int {
+	return i + 1
+}
+
 // Init empty funcMap obj and store it in a global var. String keyed map acting
 // as a lookup between the names of custom template funcs and actual funcs.
 var functions = template.FuncMap{
 	"humanDate": humanDate,
+	"addOne":    addOne,
 }
 
 // Only parse files once when app starts, then store the parsed templates in

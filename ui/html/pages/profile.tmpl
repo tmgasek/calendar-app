@@ -26,6 +26,28 @@
     </div>
     {{ end }}
 </div>
+<div id="calendar-container">
+<div>
+    <h2>Hourly Availability</h2>
+    {{range .HourlyAvailability}}
+    <div>
+        <h3>{{.Date}}</h3>
+        <table>
+            <tr>
+                <th>Hour</th>
+                <th>Status</th>
+            </tr>
+            {{range $index, $status := .Hours}}
+            <tr>
+                <td>{{$index}}:00 - {{addOne $index}}:00</td>
+                <td class="{{$status}}">{{$status}}</td>
+            </tr>
+            {{end}}
+        </table>
+    </div>
+    {{end}}
+</div>
+</div>
 {{end}}
 
 <!-- 

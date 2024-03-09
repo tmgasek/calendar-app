@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/tmgasek/calendar-app/internal/data"
 	"github.com/tmgasek/calendar-app/internal/validator"
@@ -183,6 +184,11 @@ func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+type HourlyAvailability struct {
+	Date  string // "2006-01-02" format
+	Hours [24]string
+}
+
 func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
@@ -195,8 +201,53 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("events: %v\n", events)
+	// Determine the range of dates to display. For now show 7 days from today.
+	start := time.Now()
+	end := start.AddDate(0, 0, 7)
+
+	// Init hourly availability
+	availability := make([]HourlyAvailability, 0)
+	for d := start; d.Before(end); d = d.AddDate(0, 0, 1) {
+		day := HourlyAvailability{
+			Date:  d.Format("2006-01-02"),
+			Hours: [24]string{},
+		}
+
+		for i := range day.Hours {
+			// Init all to free
+			day.Hours[i] = "free"
+		}
+		availability = append(availability, day)
+	}
+
+	// Mark the hours that are busy based on user's events
+	for _, event := range events {
+		eventStart := event.StartTime
+		eventEnd := event.EndTime
+
+		// Only process event within our range
+		if eventStart.Before(start) || eventEnd.After(end) {
+			fmt.Printf("Event outside of range: %s - %s\n", eventStart, eventEnd)
+			continue
+		}
+
+		for _, day := range availability {
+			if eventStart.Format("2006-01-02") == day.Date {
+				startHour := eventStart.Hour()
+				endHour := eventEnd.Hour()
+
+				fmt.Printf("Start: %d, End: %d\n", startHour, endHour)
+				// Mark each hour of the event as busy
+				for h := startHour; h <= endHour && h < 24; h++ {
+					day.Hours[h] = "busy"
+				}
+			}
+		}
+	}
+
 	data.Events = events
+	data.HourlyAvailability = availability
 
 	app.render(w, http.StatusOK, "profile.tmpl", data)
+
 }
