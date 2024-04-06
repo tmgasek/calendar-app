@@ -93,22 +93,25 @@ func (app *application) showEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// No events found
 	if len(events.Items) == 0 {
 		app.infoLog.Println("No upcoming events found.")
-	} else {
-		for _, item := range events.Items {
-			// Convert from Google event to own unified Event struct.
-			event := convertGoogleEventToEvent(userID, item)
+		return
+	}
 
-			// Save event to the database.
-			err := app.models.Events.Insert(event)
-			if err != nil {
-				app.serverError(w, err)
-				return
-			}
+	// Go over each event and save to db.
+	for _, item := range events.Items {
+		// Convert from Google event to own unified Event struct.
+		event := convertGoogleEventToEvent(userID, item)
 
-			app.infoLog.Printf("Event saved: %v (%v)\n", item.Summary, item.Start.DateTime)
+		// Save event to the database.
+		err := app.models.Events.Insert(event)
+		if err != nil {
+			app.serverError(w, err)
+			return
 		}
+
+		app.infoLog.Printf("Event saved: %v (%v)\n", item.Summary, item.Start.DateTime)
 	}
 }
 
