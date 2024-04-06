@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/tmgasek/calendar-app/internal/data"
@@ -69,14 +70,25 @@ func (app *application) getOutlookEvents(w http.ResponseWriter, r *http.Request)
 	// Define the time range for calendar events
 	//TODO: need to handle cases if one of these dates is in different timezome
 	// for example, endTime is now in british summer time.
-	startTime := time.Now().Format(time.RFC3339)
-	endTime := time.Now().Add(30 * 24 * time.Hour).Format(time.RFC3339) // Next 30 days
+	startTime := time.Now().Format("2006-01-02T15:04:05-07:00")
+	// endTime := time.Now().Add(30 * 24 * time.Hour).Format("2006-01-02T15:04:05-07:00")
+	// Make endtime one year from now
+	endTime := time.Now().AddDate(1, 0, 0).Format("2006-01-02T15:04:05-07:00")
+
 	fmt.Printf("startTime: %v\n", startTime)
 	fmt.Printf("endTime: %v\n", endTime)
 
 	// Create request to Microsoft Graph API
-	reqURL := fmt.Sprintf("https://graph.microsoft.com/v1.0/me/calendarview?startDateTime=%s&endDateTime=%s", startTime, endTime)
+	reqURL := fmt.Sprintf("https://graph.microsoft.com/v1.0/me/calendarview?startDateTime=%s&endDateTime=%s", url.QueryEscape(startTime), url.QueryEscape(endTime))
+
 	req, err := http.NewRequest("GET", reqURL, nil)
+	if err != nil {
+		app.errorLog.Printf("Error creating request: %v\n", err)
+		// Handle error
+		return
+	}
+
+	req, err = http.NewRequest("GET", reqURL, nil)
 	if err != nil {
 		app.errorLog.Printf("Error creating request: %v\n", err)
 		// Handle error
