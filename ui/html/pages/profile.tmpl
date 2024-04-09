@@ -26,28 +26,47 @@
     </div>
     {{ end }}
 </div>
-<div id="calendar-container">
-<div>
-    <h2>Hourly Availability</h2>
+<!-- <div id="calendar-container"> -->
+<!-- <div> -->
+<!--     <h2>Hourly Availability</h2> -->
+<!--     {{range .HourlyAvailability}} -->
+<!--     <div> -->
+<!--         <h3>{{.Date}}</h3> -->
+<!--         <table> -->
+<!--             <tr> -->
+<!--                 <th>Hour</th> -->
+<!--                 <th>Status</th> -->
+<!--             </tr> -->
+<!--             {{range $index, $status := .Hours}} -->
+<!--             <tr> -->
+<!--                 <td>{{$index}}:00 - {{addOne $index}}:00</td> -->
+<!--                 <td class="{{$status}}">{{$status}}</td> -->
+<!--             </tr> -->
+<!--             {{end}} -->
+<!--         </table> -->
+<!--     </div> -->
+<!--     {{end}} -->
+<!-- </div> -->
+<!-- </div> -->
+
+<table>
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th colspan="24">Hours</th>
+    </tr>
+  </thead>
+  <tbody>
     {{range .HourlyAvailability}}
-    <div>
-        <h3>{{.Date}}</h3>
-        <table>
-            <tr>
-                <th>Hour</th>
-                <th>Status</th>
-            </tr>
-            {{range $index, $status := .Hours}}
-            <tr>
-                <td>{{$index}}:00 - {{addOne $index}}:00</td>
-                <td class="{{$status}}">{{$status}}</td>
-            </tr>
-            {{end}}
-        </table>
-    </div>
+    <tr>
+      <td>{{.Date}}</td>
+      {{range .Hours}}
+      <td class="{{.}}">{{.}}</td>
+      {{end}}
+    </tr>
     {{end}}
-</div>
-</div>
+  </tbody>
+</table>
 {{end}}
 
 <!-- 

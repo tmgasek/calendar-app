@@ -201,9 +201,9 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Determine the range of dates to display. For now show 7 days from today.
+	// Determine the range of dates to display. For now show 14 days from today.
 	start := time.Now()
-	end := start.AddDate(0, 0, 7)
+	end := start.AddDate(0, 0, 14)
 
 	// Init hourly availability
 	availability := make([]HourlyAvailability, 0)
@@ -231,23 +231,28 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		for _, day := range availability {
-			if eventStart.Format("2006-01-02") == day.Date {
-				startHour := eventStart.Hour()
-				endHour := eventEnd.Hour()
+		for i := range availability {
+			day := &availability[i]
+			if eventStart.Format("2006-01-02") != day.Date {
+				continue
+			}
 
-				fmt.Printf("Start: %d, End: %d\n", startHour, endHour)
-				// Mark each hour of the event as busy
-				for h := startHour; h <= endHour && h < 24; h++ {
-					day.Hours[h] = "busy"
-				}
+			startHour := eventStart.Hour()
+			endHour := eventEnd.Hour()
+
+			fmt.Printf("Start: %d, End: %d\n", startHour, endHour)
+
+			for h := startHour; h <= endHour && h < 24; h++ {
+				fmt.Printf("Marking %d as busy\n", h)
+				day.Hours[h] = "busy"
 			}
 		}
 	}
+
+	fmt.Printf("availability: %v\n", availability)
 
 	data.Events = events
 	data.HourlyAvailability = availability
 
 	app.render(w, http.StatusOK, "profile.tmpl", data)
-
 }
