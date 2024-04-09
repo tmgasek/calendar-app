@@ -1,89 +1,42 @@
 {{define "title"}}Profile{{end}}
+
 {{define "main"}}
-<div>
-    Logged in with ID {{.UserId}}<br>
-</div>
-<h1>Profile</h1>
-<div>
-    <a href="/oauth/google/link">Link google calendar</a>
-    <a href="/oauth/microsoft/link">Link outlook calendar</a>
-</div>
-<div>
-    {{ range .Events }}
-    <div>
-        <h2>{{.Title}}</h2>
-        <p>Description: {{.Description}}</p>
-        <p>Start: {{.StartTime}}</p>
-        <p>End: {{.EndTime}}</p>
-        <p>Location: {{.Location}}</p>
-        <p>IsAllDay: {{.IsAllDay}}</p>
-        <p>Status: {{.Status}}</p>
-        <p>Created: {{.CreatedAt}}</p>
-        <p>Updated: {{.UpdatedAt}}</p>
-        <p>Timezone: {{.TimeZone}}</p>
-        <p>Visibility: {{.Visibility}}</p>
-        <p>Recurrence: {{.Recurrence}}</p>
-    </div>
-    {{ end }}
-</div>
-<!-- <div id="calendar-container"> -->
-<!-- <div> -->
-<!--     <h2>Hourly Availability</h2> -->
-<!--     {{range .HourlyAvailability}} -->
-<!--     <div> -->
-<!--         <h3>{{.Date}}</h3> -->
-<!--         <table> -->
-<!--             <tr> -->
-<!--                 <th>Hour</th> -->
-<!--                 <th>Status</th> -->
-<!--             </tr> -->
-<!--             {{range $index, $status := .Hours}} -->
-<!--             <tr> -->
-<!--                 <td>{{$index}}:00 - {{addOne $index}}:00</td> -->
-<!--                 <td class="{{$status}}">{{$status}}</td> -->
-<!--             </tr> -->
-<!--             {{end}} -->
-<!--         </table> -->
-<!--     </div> -->
-<!--     {{end}} -->
-<!-- </div> -->
-<!-- </div> -->
+<div class="container">
+  <h1>Profile</h1>
 
-<table>
-  <thead>
-    <tr>
-      <th>Date</th>
-      <th colspan="24">Hours</th>
-    </tr>
-  </thead>
-  <tbody>
-    {{range .HourlyAvailability}}
-    <tr>
-      <td>{{.Date}}</td>
-      {{range .Hours}}
-      <td class="{{.}}">{{.}}</td>
-      {{end}}
-    </tr>
-    {{end}}
-  </tbody>
-</table>
+  <div class="calendar-links">
+    <a href="/oauth/google/link" class="btn btn-google">Link Google Calendar</a>
+    <a href="/oauth/microsoft/link" class="btn btn-microsoft">Link Outlook Calendar</a>
+  </div>
+
+  <div class="availability-calendar">
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          {{range .HourlyAvailability}}
+          <th>{{.Date}}</th>
+          {{end}}
+        </tr>
+      </thead>
+      <tbody>
+        {{range $hour := .Hours}}
+        <tr>
+          <td>{{$hour}}:00</td>
+          {{range $day := $.HourlyAvailability}}
+          {{$availability := index $day.Hours $hour}}
+          <td class="{{$availability}}">
+            {{if eq $availability "free"}}
+              <span class="availability-label">&#x2714;</span>
+            {{else}}
+              <span class="availability-label">&#x2716;</span>
+            {{end}}
+          </td>
+          {{end}}
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
 {{end}}
-
-<!-- 
-	ID              int
-	UserID          int
-	Provider        string
-	ProviderEventID string
-	Title           string
-	Description     string
-	StartTime       time.Time
-	EndTime         time.Time
-	Location        string
-	IsAllDay        bool
-	Status          string
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	TimeZone        string
-	Visibility      string
-	Recurrence      string
--->

@@ -19,6 +19,7 @@ type templateData struct {
 	UserId             int
 	Events             []*data.Event
 	HourlyAvailability []HourlyAvailability
+	Hours              [16]int
 }
 
 func humanDate(t time.Time) string {
