@@ -240,16 +240,11 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 			startHour := eventStart.Hour()
 			endHour := eventEnd.Hour()
 
-			fmt.Printf("Start: %d, End: %d\n", startHour, endHour)
-
 			for h := startHour; h <= endHour && h < 24; h++ {
-				fmt.Printf("Marking %d as busy\n", h)
 				day.Hours[h] = "busy"
 			}
 		}
 	}
-
-	fmt.Printf("availability: %v\n", availability)
 
 	data.Events = events
 	data.HourlyAvailability = availability
