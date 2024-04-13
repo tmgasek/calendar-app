@@ -5,14 +5,27 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/tmgasek/calendar-app/internal/data"
 	"github.com/tmgasek/calendar-app/internal/validator"
 )
 
 func ping(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("OK"))
+}
+
+func (app *application) readIDParam(r *http.Request) (int64, error) {
+	params := httprouter.ParamsFromContext(r.Context())
+
+	id, err := strconv.ParseInt(params.ByName("id"), 10, 64)
+	if err != nil || id < 1 {
+		return 0, errors.New("invalid id parameter")
+	}
+
+	return id, nil
 }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -254,4 +267,115 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.render(w, http.StatusOK, "profile.tmpl", data)
+}
+
+func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
+
+	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+	fmt.Printf("userID: %v\n", userID)
+
+	targetUserID, err := app.readIDParam(r)
+	if err != nil {
+		app.notFound(w)
+		return
+	}
+
+	fmt.Printf("targetUserID: %v\n", targetUserID)
+
+	// Get the event data
+	events, err := app.models.Events.GetByUserID(int(targetUserID))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Printf("events: %v\n", events)
+	// Determine the range of dates to display. For now show 14 days from today.
+	start := time.Now()
+	end := start.AddDate(0, 0, 14)
+
+	// Init hourly availability
+	availability := make([]HourlyAvailability, 0)
+	for d := start; d.Before(end); d = d.AddDate(0, 0, 1) {
+		day := HourlyAvailability{
+			Date:  d.Format("2006-01-02"),
+			Hours: [24]string{},
+		}
+
+		for i := range day.Hours {
+			// Init all to free
+			day.Hours[i] = "free"
+		}
+		availability = append(availability, day)
+	}
+
+	// Mark the hours that are busy based on user's events
+	for _, event := range events {
+		eventStart := event.StartTime
+		eventEnd := event.EndTime
+
+		// Only process event within our range
+		if eventStart.Before(start) || eventEnd.After(end) {
+			fmt.Printf("Event outside of range: %s - %s\n", eventStart, eventEnd)
+			continue
+		}
+
+		for i := range availability {
+			day := &availability[i]
+			if eventStart.Format("2006-01-02") != day.Date {
+				continue
+			}
+
+			startHour := eventStart.Hour()
+			endHour := eventEnd.Hour()
+
+			for h := startHour; h <= endHour && h < 24; h++ {
+				day.Hours[h] = "busy"
+			}
+		}
+	}
+
+	data.Events = events
+	data.HourlyAvailability = availability
+	data.Hours = [16]int{
+		7, 8, 9, 10, 11,
+		12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+	}
+
+	app.render(w, http.StatusOK, "user-calendar.tmpl", data)
+
+}
+
+// include struct tags to tell the decoder how to map HTML form vals to
+// struct fields. "-" tells it to ignore a field!
+type appointmentCreateForm struct {
+	Title               string `form:"title"`
+	Description         string `form:"description"`
+	StartTime           string `form:"start_time"`
+	EndTime             string `form:"end_time"`
+	Location            string `form:"location"`
+	TargetUserID        int64  `form:"target_user_id"`
+	validator.Validator `form:"-"`
+}
+
+func (app *application) createAppointment(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("createAppointment")
+	// Get the authenticated user ID
+	// userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+
+	var form appointmentCreateForm
+
+	err := app.decodePostForm(r, &form)
+	if err != nil {
+		app.errorLog.Println(err)
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	// fmt.Printf("userID: %v, targetUserID: %v\n", userID, targetUserID)
+
+	// Declare anon struct to hold info we expect to be in req body.
+
+	fmt.Printf("form: %v\n", form)
 }

@@ -73,8 +73,6 @@ func (app *application) routes() http.Handler {
 	protected := dynamic.Append(app.requireAuthentication)
 	router.Handler(http.MethodPost, "/user/logout", protected.ThenFunc(app.userLogoutPost))
 
-	router.Handler(http.MethodGet, "/user/profile", protected.ThenFunc(app.userProfile))
-
 	// Google OAuth routes.
 	router.Handler(http.MethodGet, "/oauth/google/link", protected.ThenFunc(app.linkGoogleAccount))
 	router.Handler(http.MethodGet, "/oauth/google/callback", protected.ThenFunc(app.handleGoogleCalendarCallback))
@@ -83,8 +81,17 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/oauth/microsoft/link", protected.ThenFunc(app.redirectToMicrosoftLogin))
 	router.Handler(http.MethodGet, "/oauth/microsoft/callback", protected.ThenFunc(app.handleMicrosoftAuthCallback))
 
+	// TODO: these two events routes should probably complete as part of callbacks too.
+	// Also need to run these periodically, refactor
 	router.Handler(http.MethodGet, "/user/events", protected.ThenFunc(app.showEvents))
 	router.Handler(http.MethodGet, "/user/outlook/events", protected.ThenFunc(app.getOutlookEvents))
+
+	// Profile views
+	router.Handler(http.MethodGet, "/user/profile", protected.ThenFunc(app.userProfile))
+	router.Handler(http.MethodGet, "/users/:id/calendar", protected.ThenFunc(app.viewUserProfile))
+
+	// Create a new appointment between two users
+	router.Handler(http.MethodPost, "/appointments/create", protected.ThenFunc(app.createAppointment))
 
 	// Create a new middleware chain.
 	standard := alice.New(app.recoverPanic, app.logRequest, secureHeaders)

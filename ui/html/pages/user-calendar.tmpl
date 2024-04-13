@@ -1,0 +1,90 @@
+{{define "title"}}User Profile{{end}}
+
+{{define "main"}}
+<div class="container">
+  <h1>Profile</h1>
+
+  <div class="calendar-links">
+    <a href="/oauth/google/link" class="btn btn-google">Link Google Calendar</a>
+    <a href="/oauth/microsoft/link" class="btn btn-microsoft">Link Outlook Calendar</a>
+  </div>
+
+  <div class="even-summary-list">
+    <h2>Events</h2>
+    <ul>
+      {{range .Events}}
+      <li>
+        <div class="event-summary">
+          <h3>{{.Title}}</h3>
+          <p>{{.Description}}</p>
+          <p>{{.StartTime}} - {{.EndTime}}</p>
+          <p>{{.Location}}</p>
+        </div>
+      </li>
+      {{end}}
+    </ul>
+  </div>
+
+  <div>
+    <h2>Book a meeting</h2>
+    <form action="/appointments/create" method="post">
+      <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input type="text" name="title" id="title" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea name="description" id="description" class="form-control" required></textarea>
+      </div>
+      <div class="form-group">
+        <label for="location">Location</label>
+        <input type="text" name="location" id="location" class="form-control" required>
+      </div>
+      <div class="form-group">
+        <label for="start_time">Start Time</label>
+        <input type="datetime-local" name="start_time" id="start_time" class="form-control" required value="2024-04-14T19:00">
+      </div>
+      <div class="form-group">
+        <label for="end_time">End Time</label>
+        <input type="datetime-local" name="end_time" id="end_time" class="form-control" required value="2024-04-14T20:00">
+      </div>
+      <div class="form-group">
+        <label for="target_user_id">target user id</label>
+        <input type="number" name="target_user_id" id="target_user_id" class="form-control" required value=1>
+      </div>
+      <button type="submit" class="btn btn-primary">Book</button>
+    </form>
+  </div>
+
+  <div class="availability-calendar">
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          {{range .HourlyAvailability}}
+          <th>{{.Date}}</th>
+          {{end}}
+        </tr>
+      </thead>
+      <tbody>
+        {{range $hour := .Hours}}
+        <tr>
+          <td>{{$hour}}:00</td>
+          {{range $day := $.HourlyAvailability}}
+          {{$availability := index $day.Hours $hour}}
+          <td class="{{$availability}}">
+            {{if eq $availability "free"}}
+              <span class="availability-label">&#x2714;</span>
+            {{else}}
+              <span class="availability-label">&#x2716;</span>
+            {{end}}
+          </td>
+          {{end}}
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{end}}

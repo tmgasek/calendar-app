@@ -9,6 +9,22 @@
     <a href="/oauth/microsoft/link" class="btn btn-microsoft">Link Outlook Calendar</a>
   </div>
 
+  <div class="even-summary-list">
+    <h2>Events</h2>
+    <ul>
+      {{range .Events}}
+      <li>
+        <div class="event-summary">
+          <h3>{{.Title}}</h3>
+          <p>{{.Description}}</p>
+          <p>{{.StartTime}} - {{.EndTime}}</p>
+          <p>{{.Location}}</p>
+        </div>
+      </li>
+      {{end}}
+    </ul>
+  </div>
+
   <div class="availability-calendar">
     <table>
       <thead>
