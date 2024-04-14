@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/tmgasek/calendar-app/internal/data"
 	"github.com/tmgasek/calendar-app/internal/validator"
+	"google.golang.org/api/calendar/v3"
+	"google.golang.org/api/option"
 )
 
 func ping(w http.ResponseWriter, r *http.Request) {
@@ -281,8 +284,6 @@ func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	fmt.Printf("targetUserID: %v\n", targetUserID)
-
 	// Get the event data
 	events, err := app.models.Events.GetByUserID(int(targetUserID))
 	if err != nil {
@@ -290,7 +291,6 @@ func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	fmt.Printf("events: %v\n", events)
 	// Determine the range of dates to display. For now show 14 days from today.
 	start := time.Now()
 	end := start.AddDate(0, 0, 14)
@@ -362,7 +362,7 @@ type appointmentCreateForm struct {
 func (app *application) createAppointment(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("createAppointment")
 	// Get the authenticated user ID
-	// userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
 
 	var form appointmentCreateForm
 
@@ -373,9 +373,81 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// fmt.Printf("userID: %v, targetUserID: %v\n", userID, targetUserID)
+	// Parse the start and end times
+	startTime, err := time.Parse("2006-01-02T15:04", form.StartTime)
+	if err != nil {
+		app.errorLog.Println("Failed to parse start time:", err)
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+	endTime, err := time.Parse("2006-01-02T15:04", form.EndTime)
+	if err != nil {
+		app.errorLog.Println("Failed to parse end time:", err)
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
 
-	// Declare anon struct to hold info we expect to be in req body.
+	// Get the user and target users Google tokens
+	// TODO: do this for all associated providers.
+	userToken, err := app.models.AuthTokens.Token(userID, "google")
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	targetUserToken, err := app.models.AuthTokens.Token(int(form.TargetUserID), "google")
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 
 	fmt.Printf("form: %v\n", form)
+	fmt.Printf("startTime: %v\n", startTime)
+	fmt.Printf("endTime: %v\n", endTime)
+	fmt.Printf("userToken: %v\n", userToken)
+	fmt.Printf("targetUserToken: %v\n", targetUserToken)
+
+	ctx := context.Background()
+	userClient := app.googleOAuthConfig.Client(ctx, userToken)
+	targetUserClient := app.googleOAuthConfig.Client(ctx, targetUserToken)
+
+	userEvent := &calendar.Event{
+		Summary:     form.Title,
+		Description: form.Description,
+		Start: &calendar.EventDateTime{
+			DateTime: startTime.Format(time.RFC3339),
+		},
+		End: &calendar.EventDateTime{
+			DateTime: endTime.Format(time.RFC3339),
+		},
+	}
+
+	// srv, err := calendar.NewService(context.Background(), option.WithHTTPClient(client))
+	// if err != nil {
+	// 	app.serverError(w, err)
+	// 	return
+	// }
+
+	user1Service, err := calendar.NewService(ctx, option.WithHTTPClient(userClient))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	_, err = user1Service.Events.Insert("primary", userEvent).Do()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	user2Service, err := calendar.NewService(ctx, option.WithHTTPClient(targetUserClient))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	_, err = user2Service.Events.Insert("primary", userEvent).Do()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.infoLog.Println("Event created successfully!")
 }
