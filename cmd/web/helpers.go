@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"net/http"
@@ -20,6 +21,37 @@ func (app *application) newTemplateData(r *http.Request) *templateData {
 		CSRFToken:       nosurf.Token(r),
 		UserId:          app.sessionManager.GetInt(r.Context(), "authenticatedUserID"),
 	}
+}
+
+// Easily render templates from the cache
+func (app *application) render(
+	w http.ResponseWriter,
+	status int,
+	page string,
+	data *templateData,
+) {
+	// retrieve the right template set from cache based on page name
+	ts, ok := app.templateCache[page]
+	if !ok {
+		err := fmt.Errorf("The template %s does not exist", page)
+		app.serverError(w, err)
+		return
+	}
+
+	// init new buffer
+	buf := new(bytes.Buffer)
+
+	// write template to buffer instead of to the http.ResponseWriter
+	err := ts.ExecuteTemplate(buf, "base", data)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// if template written to buffer w/o errors, we are good to go.
+	w.WriteHeader(status)
+
+	buf.WriteTo(w)
 }
 
 // write error msg and stack trace to errorLog, send generic 500 res to user
