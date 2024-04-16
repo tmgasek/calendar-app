@@ -71,7 +71,6 @@ func (app *application) getOutlookEvents(w http.ResponseWriter, r *http.Request)
 	//TODO: need to handle cases if one of these dates is in different timezome
 	// for example, endTime is now in british summer time.
 	startTime := time.Now().Format("2006-01-02T15:04:05-07:00")
-	// endTime := time.Now().Add(30 * 24 * time.Hour).Format("2006-01-02T15:04:05-07:00")
 	// Make endtime one year from now
 	endTime := time.Now().AddDate(1, 0, 0).Format("2006-01-02T15:04:05-07:00")
 
@@ -83,15 +82,7 @@ func (app *application) getOutlookEvents(w http.ResponseWriter, r *http.Request)
 
 	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
-		app.errorLog.Printf("Error creating request: %v\n", err)
-		// Handle error
-		return
-	}
-
-	req, err = http.NewRequest("GET", reqURL, nil)
-	if err != nil {
-		app.errorLog.Printf("Error creating request: %v\n", err)
-		// Handle error
+		app.serverError(w, err)
 		return
 	}
 
@@ -101,8 +92,7 @@ func (app *application) getOutlookEvents(w http.ResponseWriter, r *http.Request)
 	// Send the request
 	resp, err := client.Do(req)
 	if err != nil {
-		app.errorLog.Printf("Error making request: %v\n", err)
-		// Handle error
+		app.serverError(w, err)
 		return
 	}
 	defer resp.Body.Close()
@@ -110,8 +100,7 @@ func (app *application) getOutlookEvents(w http.ResponseWriter, r *http.Request)
 	// Read and log the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		app.errorLog.Printf("Error reading response body: %v\n", err)
-		// Handle error
+		app.serverError(w, err)
 		return
 	}
 
@@ -119,10 +108,13 @@ func (app *application) getOutlookEvents(w http.ResponseWriter, r *http.Request)
 	var data struct {
 		Value []GraphEvent `json:"value"`
 	}
+
 	if err := json.Unmarshal(body, &data); err != nil {
 		app.errorLog.Printf("Error unmarshalling response body: %v\n", err)
 		return
 	}
+
+	app.infoLog.Printf("Outlook Calendar Data: %s\n", string(body))
 
 	// Convert the Graph API events to your Event struct and save them
 	for _, graphEvent := range data.Value {
@@ -143,13 +135,15 @@ func (app *application) getOutlookEvents(w http.ResponseWriter, r *http.Request)
 }
 
 type GraphEvent struct {
-	ID          string        `json:"id"`
-	Subject     string        `json:"subject"`
-	BodyPreview string        `json:"bodyPreview"`
-	Start       GraphTime     `json:"start"`
-	End         GraphTime     `json:"end"`
-	Location    GraphLocation `json:"location"`
-	IsAllDay    bool          `json:"isAllDay"`
+	ID                   string        `json:"id"`
+	Subject              string        `json:"subject"`
+	BodyPreview          string        `json:"bodyPreview"`
+	Start                GraphTime     `json:"start"`
+	End                  GraphTime     `json:"end"`
+	Location             GraphLocation `json:"location"`
+	IsAllDay             bool          `json:"isAllDay"`
+	CreatedDateTime      string        `json:"createdDateTime"`
+	LastModifiedDateTime string        `json:"lastModifiedDateTime"`
 }
 
 type GraphTime struct {
@@ -162,8 +156,11 @@ type GraphLocation struct {
 }
 
 func convertGraphEventToEvent(userID int, graphEvent GraphEvent) *data.Event {
-	startTime, _ := time.Parse(time.RFC3339, graphEvent.Start.DateTime)
-	endTime, _ := time.Parse(time.RFC3339, graphEvent.End.DateTime)
+	startTime, _ := time.Parse("2006-01-02T15:04:05.0000000", graphEvent.Start.DateTime)
+	endTime, _ := time.Parse("2006-01-02T15:04:05.0000000", graphEvent.End.DateTime)
+
+	createdAt, _ := time.Parse(time.RFC3339, graphEvent.CreatedDateTime)
+	updatedAt, _ := time.Parse(time.RFC3339, graphEvent.LastModifiedDateTime)
 
 	return &data.Event{
 		UserID:          userID,
@@ -176,5 +173,7 @@ func convertGraphEventToEvent(userID int, graphEvent GraphEvent) *data.Event {
 		Location:        graphEvent.Location.DisplayName,
 		IsAllDay:        graphEvent.IsAllDay,
 		TimeZone:        graphEvent.Start.TimeZone,
+		CreatedAt:       createdAt,
+		UpdatedAt:       updatedAt,
 	}
 }

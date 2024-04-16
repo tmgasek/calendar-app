@@ -40,14 +40,12 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 	// Parse the start and end times
 	startTime, err := time.Parse("2006-01-02T15:04", form.StartTime)
 	if err != nil {
-		app.errorLog.Println("Failed to parse start time:", err)
-		app.clientError(w, http.StatusBadRequest)
+		app.serverError(w, err)
 		return
 	}
 	endTime, err := time.Parse("2006-01-02T15:04", form.EndTime)
 	if err != nil {
-		app.errorLog.Println("Failed to parse end time:", err)
-		app.clientError(w, http.StatusBadRequest)
+		app.serverError(w, err)
 		return
 	}
 
@@ -84,12 +82,6 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 			DateTime: endTime.Format(time.RFC3339),
 		},
 	}
-
-	// srv, err := calendar.NewService(context.Background(), option.WithHTTPClient(client))
-	// if err != nil {
-	// 	app.serverError(w, err)
-	// 	return
-	// }
 
 	user1Service, err := calendar.NewService(ctx, option.WithHTTPClient(userClient))
 	if err != nil {
