@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/tmgasek/calendar-app/internal/calendar"
 )
 
 type HourlyAvailability struct {
@@ -16,7 +18,25 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 
 	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
 
-	// Get the event data
+	// Fetch and save Google events to the db
+	token, err := app.models.AuthTokens.Token(userID, "google")
+	googleClient := app.googleOAuthConfig.Client(r.Context(), token)
+	err = calendar.FetchAndSaveGoogleEvents(userID, googleClient, &app.models)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Fetch and save Microsoft events to the db
+	token, err = app.models.AuthTokens.Token(userID, "microsoft")
+	outlookClient := app.azureOAuth2Config.Client(r.Context(), token)
+	err = calendar.FetchAndSaveOutlookEvents(userID, outlookClient, &app.models)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Get the event data from the db
 	events, err := app.models.Events.GetByUserID(userID)
 	if err != nil {
 		app.serverError(w, err)

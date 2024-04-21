@@ -105,5 +105,6 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	app.infoLog.Println("Event created successfully!")
+	// Redirect back to profile
+	http.Redirect(w, r, "/profile", http.StatusSeeOther)
 }
