@@ -95,3 +95,19 @@ func (m *UserModel) Exists(id int) (bool, error) {
 	err := m.DB.QueryRowContext(ctx, query, id).Scan(&exists)
 	return exists, err
 }
+
+func (m *UserModel) Get(id int) (*User, error) {
+	user := &User{}
+
+	query := "SELECT id, name, email, created_at FROM users WHERE id = $1"
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, id).Scan(&user.ID, &user.Name, &user.Email, &user.Created)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}

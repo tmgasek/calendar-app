@@ -1,0 +1,19 @@
+{{define "subject"}}Welcome{{end}}
+{{define "plainBody"}}
+You have received appointment request from user {{.RequesteeName}}
+Do you accept??
+{{end}}
+{{define "htmlBody"}}
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+<p>Hi,</p>
+<p> You have received appointment request from user {{.RequesteeName}} </p>
+<p>Thanks,</p>
+</body>
+</html>
+{{end}}
