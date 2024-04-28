@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -51,12 +54,12 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 
 	// Get the user and target users Google tokens
 	// TODO: do this for all associated providers.
-	userToken, err := app.models.AuthTokens.Token(userID, "google")
+	userTokenGoogle, err := app.models.AuthTokens.Token(userID, "google")
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	targetUserToken, err := app.models.AuthTokens.Token(int(form.TargetUserID), "google")
+	targetUserTokenGoogle, err := app.models.AuthTokens.Token(int(form.TargetUserID), "google")
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -65,12 +68,12 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 	fmt.Printf("form: %v\n", form)
 	fmt.Printf("startTime: %v\n", startTime)
 	fmt.Printf("endTime: %v\n", endTime)
-	fmt.Printf("userToken: %v\n", userToken)
-	fmt.Printf("targetUserToken: %v\n", targetUserToken)
+	fmt.Printf("userTokenGoogle: %v\n", userTokenGoogle)
+	fmt.Printf("targetUserTokenGoogle: %v\n", targetUserTokenGoogle)
 
 	ctx := context.Background()
-	userClient := app.googleOAuthConfig.Client(ctx, userToken)
-	targetUserClient := app.googleOAuthConfig.Client(ctx, targetUserToken)
+	userClient := app.googleOAuthConfig.Client(ctx, userTokenGoogle)
+	targetUserClient := app.googleOAuthConfig.Client(ctx, targetUserTokenGoogle)
 
 	userEvent := &calendar.Event{
 		Summary:     form.Title,
@@ -83,28 +86,121 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 		},
 	}
 
-	user1Service, err := calendar.NewService(ctx, option.WithHTTPClient(userClient))
+	// Here we need to send out the event to both users' linked calendars.
+
+	// GOOGLE
+	user1GoogleService, err := calendar.NewService(ctx, option.WithHTTPClient(userClient))
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	_, err = user1Service.Events.Insert("primary", userEvent).Do()
+	_, err = user1GoogleService.Events.Insert("primary", userEvent).Do()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	user2GoogleService, err := calendar.NewService(ctx, option.WithHTTPClient(targetUserClient))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	_, err = user2GoogleService.Events.Insert("primary", userEvent).Do()
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	user2Service, err := calendar.NewService(ctx, option.WithHTTPClient(targetUserClient))
-	if err != nil {
+	// MICROSOFT
+	outlookEvent := GraphEvent{
+		Subject: form.Title,
+		Body: struct {
+			ContentType string `json:"contentType"`
+			Content     string `json:"content"`
+		}{
+			ContentType: "HTML",
+			Content:     form.Description,
+		},
+		Start: struct {
+			DateTime string `json:"dateTime"`
+			TimeZone string `json:"timeZone"`
+		}{
+			DateTime: startTime.Format(time.RFC3339),
+			TimeZone: "Pacific Standard Time", // or retrieve from user settings
+		},
+		End: struct {
+			DateTime string `json:"dateTime"`
+			TimeZone string `json:"timeZone"`
+		}{
+			DateTime: endTime.Format(time.RFC3339),
+			TimeZone: "Pacific Standard Time",
+		},
+		Location: struct {
+			DisplayName string `json:"displayName"`
+		}{
+			DisplayName: form.Location,
+		},
+	}
+
+	// Send event to Microsoft for the user and target user
+	user1MicrosoftToken, err := app.models.AuthTokens.Token(userID, "microsoft")
+	user1azureClient := app.azureOAuth2Config.Client(r.Context(), user1MicrosoftToken)
+	if err := createOutlookEvent(*user1azureClient, user1MicrosoftToken.AccessToken, outlookEvent); err != nil {
 		app.serverError(w, err)
 		return
 	}
-	_, err = user2Service.Events.Insert("primary", userEvent).Do()
-	if err != nil {
+
+	user2MicrosoftToken, err := app.models.AuthTokens.Token(int(form.TargetUserID), "microsoft")
+	user2azureClient := app.azureOAuth2Config.Client(r.Context(), user2MicrosoftToken)
+	if err := createOutlookEvent(*user2azureClient, user2MicrosoftToken.AccessToken, outlookEvent); err != nil {
 		app.serverError(w, err)
 		return
 	}
 
 	// Redirect back to profile
-	http.Redirect(w, r, "/profile", http.StatusSeeOther)
+	http.Redirect(w, r, "/user/profile", http.StatusSeeOther)
+}
+
+type GraphEvent struct {
+	Subject string `json:"subject"`
+	Body    struct {
+		ContentType string `json:"contentType"`
+		Content     string `json:"content"`
+	} `json:"body"`
+	Start struct {
+		DateTime string `json:"dateTime"`
+		TimeZone string `json:"timeZone"`
+	} `json:"start"`
+	End struct {
+		DateTime string `json:"dateTime"`
+		TimeZone string `json:"timeZone"`
+	} `json:"end"`
+	Location struct {
+		DisplayName string `json:"displayName"`
+	} `json:"location"`
+}
+
+func createOutlookEvent(client http.Client, userToken string, event GraphEvent) error {
+	eventJSON, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", "https://graph.microsoft.com/v1.0/me/events", bytes.NewBuffer(eventJSON))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+userToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		responseBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to create event: %s", responseBody)
+	}
+	return nil
 }
