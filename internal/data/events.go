@@ -23,6 +23,13 @@ type Event struct {
 	Visibility      string
 	Recurrence      string
 	RequesterID     int
+	Requester       *Requester
+}
+
+type Requester struct {
+	ID    int
+	Name  string
+	Email string
 }
 
 type EventModel struct {
@@ -76,6 +83,45 @@ func (m *EventModel) GetByUserID(userID int) ([]*Event, error) {
 		if err != nil {
 			return nil, err
 		}
+		events = append(events, event)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return events, nil
+}
+
+func (m *EventModel) GetPending(userID int) ([]*Event, error) {
+	query := `
+        SELECT e.event_id, e.user_id, e.provider, e.provider_event_id, e.requester_id, e.title, e.description, e.start_time, e.end_time, e.location, e.is_all_day, e.status, e.created_at, e.updated_at, e.time_zone, e.visibility, e.recurrence,
+               u.id AS requester_id, u.name AS requester_name, u.email AS requester_email
+        FROM events e
+        LEFT JOIN users u ON e.requester_id = u.id
+        WHERE e.user_id = $1 AND e.status = 'pending'
+    `
+	rows, err := m.DB.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	events := []*Event{}
+
+	for rows.Next() {
+		event := &Event{}
+		requester := &Requester{}
+
+		err := rows.Scan(
+			&event.ID, &event.UserID, &event.Provider, &event.ProviderEventID, &event.RequesterID, &event.Title, &event.Description, &event.StartTime, &event.EndTime, &event.Location, &event.IsAllDay, &event.Status, &event.CreatedAt, &event.UpdatedAt, &event.TimeZone, &event.Visibility, &event.Recurrence,
+			&requester.ID, &requester.Name, &requester.Email,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		event.Requester = requester
 		events = append(events, event)
 	}
 

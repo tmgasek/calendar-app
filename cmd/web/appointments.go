@@ -248,3 +248,19 @@ func createOutlookEvent(client http.Client, userToken string, event GraphEvent) 
 	}
 	return nil
 }
+
+func (app *application) viewRequests(w http.ResponseWriter, r *http.Request) {
+	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+
+	events, err := app.models.Events.GetPending(userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Printf("events: %v\n", events)
+
+	// app.render(w, r, "requests.page.tmpl", map[string]interface{}{
+	//     "Events": events,
+	// })
+}
