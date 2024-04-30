@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/tmgasek/calendar-app/internal/data"
 	"github.com/tmgasek/calendar-app/internal/validator"
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
@@ -65,6 +66,26 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 
 	emailData := EmailData{
 		RequesteeName: requestee.Name,
+	}
+
+	// Add the event to the databse with status "pending" to the target user
+	// This is becasue the target user needs to confirm the appointment
+	event := &data.Event{
+		UserID:      int(targetUser.ID),
+		RequesterID: userID,
+		Provider:    "internal",
+		Title:       form.Title,
+		Description: form.Description,
+		StartTime:   startTime,
+		EndTime:     endTime,
+		Location:    form.Location,
+		Status:      "pending",
+	}
+
+	err = app.models.Events.Insert(event)
+	if err != nil {
+		app.serverError(w, err)
+		return
 	}
 
 	err = app.mailer.Send(targetUser.Email, "confirm-appointment.tmpl", emailData)

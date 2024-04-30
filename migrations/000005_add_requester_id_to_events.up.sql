@@ -1,0 +1,2 @@
+ALTER TABLE events
+ADD COLUMN requester_id INT REFERENCES users(id) ON DELETE CASCADE;
