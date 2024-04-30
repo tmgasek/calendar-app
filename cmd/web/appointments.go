@@ -258,9 +258,13 @@ func (app *application) viewRequests(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("events: %v\n", events)
+	for _, event := range events {
+		fmt.Printf("Event ID: %d, Title: %s, RequesterID: %d, Status: %s, StartTime: %v, EndTime: %v\n",
+			event.ID, event.Title, event.RequesterID, event.Status, event.StartTime, event.EndTime,
+		)
+	}
 
-	// app.render(w, r, "requests.page.tmpl", map[string]interface{}{
-	//     "Events": events,
-	// })
+	data := app.newTemplateData(r)
+	data.Events = events
+	app.render(w, http.StatusOK, "requests.tmpl", data)
 }
