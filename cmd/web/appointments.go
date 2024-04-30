@@ -40,6 +40,12 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	targetUser, err := app.models.Users.Get(int(form.TargetUserID))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
 	// Parse the start and end times
 	startTime, err := time.Parse("2006-01-02T15:04", form.StartTime)
 	if err != nil {
@@ -52,14 +58,34 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Get the user and target users Google tokens
+	requestee, err := app.models.Users.Get(userID)
+	type EmailData struct {
+		RequesteeName string
+	}
+
+	emailData := EmailData{
+		RequesteeName: requestee.Name,
+	}
+
+	err = app.mailer.Send(targetUser.Email, "confirm-appointment.tmpl", emailData)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	app.infoLog.Println("********** Email sent")
+	return
+
+	// Here we need to send out the event to both users' linked calendars.
 	// TODO: do this for all associated providers.
+	// GOOGLE
+
 	userTokenGoogle, err := app.models.AuthTokens.Token(userID, "google")
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	targetUserTokenGoogle, err := app.models.AuthTokens.Token(int(form.TargetUserID), "google")
+	targetUserTokenGoogle, err := app.models.AuthTokens.Token(int(targetUser.ID), "google")
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -86,9 +112,6 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 		},
 	}
 
-	// Here we need to send out the event to both users' linked calendars.
-
-	// GOOGLE
 	user1GoogleService, err := calendar.NewService(ctx, option.WithHTTPClient(userClient))
 	if err != nil {
 		app.serverError(w, err)
@@ -149,7 +172,7 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	user2MicrosoftToken, err := app.models.AuthTokens.Token(int(form.TargetUserID), "microsoft")
+	user2MicrosoftToken, err := app.models.AuthTokens.Token(int(targetUser.ID), "microsoft")
 	user2azureClient := app.azureOAuth2Config.Client(r.Context(), user2MicrosoftToken)
 	if err := createOutlookEvent(*user2azureClient, user2MicrosoftToken.AccessToken, outlookEvent); err != nil {
 		app.serverError(w, err)

@@ -13,6 +13,7 @@ import (
 	"github.com/go-playground/form/v4"
 	_ "github.com/lib/pq"
 	"github.com/tmgasek/calendar-app/internal/data"
+	"github.com/tmgasek/calendar-app/internal/mailer"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"golang.org/x/oauth2/microsoft"
@@ -34,6 +35,13 @@ type config struct {
 		maxIdleConns int
 		maxIdleTime  string
 	}
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+		sender   string
+	}
 }
 
 // App struct to hold the app-wide dependencies.
@@ -46,6 +54,7 @@ type application struct {
 	sessionManager    *scs.SessionManager
 	googleOAuthConfig *oauth2.Config
 	azureOAuth2Config *oauth2.Config
+	mailer            mailer.Mailer
 }
 
 func main() {
@@ -60,10 +69,18 @@ func main() {
 	flag.StringVar(&cfg.addr, "addr", ":8080", "HTTP network address")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 
+	// DB.
 	flag.StringVar(&cfg.db.dsn, "db-dsn", "", "Postgresql DSN")
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
+
+	// Mailer.
+	flag.StringVar(&cfg.smtp.host, "smtp-host", "sandbox.smtp.mailtrap.io", "SMTP host")
+	flag.IntVar(&cfg.smtp.port, "smtp-port", 25, "SMTP port")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", "a7303712992c04", "SMTP username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", "fcbce4d2ec04cd", "SMTP password")
+	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "calendar-genie <no-reply@calendar-genie>", "SMTP sender")
 
 	flag.Parse()
 
@@ -96,6 +113,8 @@ func main() {
 		templateCache:  templateCache,
 		formDecoder:    formDecoder,
 		sessionManager: sessionManager,
+		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username,
+			cfg.smtp.password, cfg.smtp.sender),
 	}
 
 	srv := &http.Server{
