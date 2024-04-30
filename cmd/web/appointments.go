@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/tmgasek/calendar-app/internal/data"
 	"github.com/tmgasek/calendar-app/internal/validator"
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
@@ -61,6 +62,27 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 	requestee, err := app.models.Users.Get(userID)
 	type EmailData struct {
 		RequesteeName string
+	}
+
+	// Create the appointment request.
+	appointmentRequest := &data.AppointmentRequest{
+		RequesterID:  int(userID),
+		TargetUserID: int(form.TargetUserID),
+		Title:        form.Title,
+		Description:  form.Description,
+		StartTime:    startTime,
+		EndTime:      endTime,
+		Location:     form.Location,
+		Status:       "pending",
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	err = app.models.AppointmentRequests.Insert(appointmentRequest)
+	if err != nil {
+		app.errorLog.Println(err)
+		app.serverError(w, err)
+		return
 	}
 
 	emailData := EmailData{

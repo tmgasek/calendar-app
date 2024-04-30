@@ -1,0 +1,42 @@
+{{define "title"}}Requests{{end}}
+
+{{define "main"}}
+<div class="container">
+  <h1>Requests</h1>
+
+  <div class="calendar-links">
+    <a href="/oauth/google/link" class="btn btn-google">Link Google Calendar</a>
+    <a href="/oauth/microsoft/link" class="btn btn-microsoft">Link Outlook Calendar</a>
+  </div>
+
+type AppointmentRequest struct {
+	RequestID    int
+	RequesterID  int
+	TargetUserID int
+	Title        string
+	Description  string
+	StartTime    time.Time
+	EndTime      time.Time
+	Location     string
+	Status       string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	TimeZone     string
+}
+
+  <div class="">
+    <ul>
+      {{range .AppointmentRequests}}
+      <li>
+        <div class="">
+          <h3>{{.Title}}</h3>
+          <p>Requester: {{.RequesterID}}</p>
+          <p>{{.StartTime}} - {{.EndTime}}</p>
+          <p>{{.Location}}</p>
+        </div>
+      </li>
+      {{end}}
+    </ul>
+  </div>
+</div>
+{{end}}

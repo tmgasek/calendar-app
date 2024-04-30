@@ -88,6 +88,9 @@ func (app *application) routes() http.Handler {
 	// Create a new appointment between two users
 	router.Handler(http.MethodPost, "/appointments/create", protected.ThenFunc(app.createAppointment))
 
+	// Appointment Requests
+	router.Handler(http.MethodGet, "/requests", protected.ThenFunc(app.viewAppointmentRequests))
+
 	// Create a new middleware chain.
 	standard := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
 

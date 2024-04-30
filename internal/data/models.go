@@ -13,16 +13,18 @@ var (
 )
 
 type Models struct {
-	Users      UserModel
-	AuthTokens AuthTokenModel
-	Events     EventModel
+	Users               UserModel
+	AuthTokens          AuthTokenModel
+	Events              EventModel
+	AppointmentRequests AppointmentRequestModel
 }
 
 // For ease of use
 func NewModels(db *sql.DB) Models {
 	return Models{
-		Users:      UserModel{DB: db},
-		AuthTokens: AuthTokenModel{DB: db},
-		Events:     EventModel{DB: db},
+		Users:               UserModel{DB: db},
+		AuthTokens:          AuthTokenModel{DB: db},
+		Events:              EventModel{DB: db},
+		AppointmentRequests: AppointmentRequestModel{DB: db},
 	}
 }
