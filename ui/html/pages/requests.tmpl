@@ -2,7 +2,7 @@
 
 {{define "main"}}
 <div class="container">
-  <h1>Requests</h1>
+    <h1>Requests</h1>
     {{range .Events}}
     <div>
         <h3>{{.Title}}</h3>
@@ -12,8 +12,11 @@
         <p>Location: {{.Location}}</p>
         <p>Status: {{.Status}}</p>
         <p>Requester: {{.Requester.Name}} ({{.Requester.Email}})</p>
-        <a href="/request/{{.ID}}/accept">Accept</a> |
-        <a href="/request/{{.ID}}/decline">Decline</a>
+        <form action="/request/{{.ID}}/update" method="POST">
+            <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}" />
+            <button type="submit" name="action" value="confirmed">Accept</button>
+            <button type="submit" name="action" value="declined">Decline</button>
+        </form>
     </div>
     {{end}}
 </div>

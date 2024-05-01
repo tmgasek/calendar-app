@@ -131,3 +131,18 @@ func (m *EventModel) GetPending(userID int) ([]*Event, error) {
 
 	return events, nil
 }
+
+func (m *EventModel) UpdateStatus(eventID int, status string) error {
+	query := `
+		UPDATE events
+		SET status = $1
+		WHERE event_id = $2
+	`
+
+	_, err := m.DB.Exec(query, status, eventID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
