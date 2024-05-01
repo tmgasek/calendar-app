@@ -9,21 +9,6 @@
     <a href="/oauth/microsoft/link" class="btn btn-microsoft">Link Outlook Calendar</a>
   </div>
 
-type AppointmentRequest struct {
-	RequestID    int
-	RequesterID  int
-	TargetUserID int
-	Title        string
-	Description  string
-	StartTime    time.Time
-	EndTime      time.Time
-	Location     string
-	Status       string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	TimeZone     string
-}
-
   <div class="">
     <ul>
       {{range .AppointmentRequests}}
@@ -33,6 +18,12 @@ type AppointmentRequest struct {
           <p>Requester: {{.RequesterID}}</p>
           <p>{{.StartTime}} - {{.EndTime}}</p>
           <p>{{.Location}}</p>
+	  <p>Requester: {{.Requester.Name}} ({{.Requester.Email}})</p>
+	  <form action="/request/{{.RequestID}}/update" method="POST">
+	    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}" />
+	    <button type="submit" name="action" value="confirmed">Accept</button>
+	    <button type="submit" name="action" value="declined">Decline</button>
+	  </form>
         </div>
       </li>
       {{end}}

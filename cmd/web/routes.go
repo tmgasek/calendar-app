@@ -91,6 +91,8 @@ func (app *application) routes() http.Handler {
 	// Appointment Requests
 	router.Handler(http.MethodGet, "/requests", protected.ThenFunc(app.viewAppointmentRequests))
 
+	router.Handler(http.MethodPost, "/request/:id/update", protected.ThenFunc(app.updateAppointmentRequest))
+
 	// Create a new middleware chain.
 	standard := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
 
