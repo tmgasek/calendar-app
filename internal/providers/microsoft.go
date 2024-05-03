@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -24,6 +25,72 @@ func (p *MicrosoftCalendarProvider) Name() string {
 
 func (p *MicrosoftCalendarProvider) CreateClient(ctx context.Context, token *oauth2.Token) *http.Client {
 	return p.config.Client(ctx, token)
+}
+
+func (p *MicrosoftCalendarProvider) CreateEvent(userID int, client *http.Client, newEventData NewEventData) error {
+	event := CreateGraphEventPayload{
+		Subject: newEventData.Title,
+		Body: struct {
+			ContentType string `json:"contentType"`
+			Content     string `json:"content"`
+		}{
+			ContentType: "HTML",
+			Content:     newEventData.Description,
+		},
+		Start: struct {
+			DateTime string `json:"dateTime"`
+			TimeZone string `json:"timeZone"`
+		}{
+			DateTime: newEventData.StartTime.Format(time.RFC3339),
+			TimeZone: "Pacific Standard Time", // or retrieve from user settings
+		},
+		End: struct {
+			DateTime string `json:"dateTime"`
+			TimeZone string `json:"timeZone"`
+		}{
+			DateTime: newEventData.EndTime.Format(time.RFC3339),
+			TimeZone: "Pacific Standard Time",
+		},
+		Location: struct {
+			DisplayName string `json:"displayName"`
+		}{
+			DisplayName: newEventData.Location,
+		},
+	}
+	// print all the values of the event
+	fmt.Printf("event: %v\n", event)
+
+	// Send the event to Microsoft
+	eventJSON, err := json.Marshal(event)
+	if err != nil {
+		fmt.Println("error marshalling event")
+		return err
+	}
+
+	req, err := http.NewRequest("POST", "https://graph.microsoft.com/v1.0/me/events", bytes.NewBuffer(eventJSON))
+	if err != nil {
+		fmt.Println("error creating request")
+		return err
+	}
+
+	fmt.Println("token: ", p.token.AccessToken)
+	req.Header.Set("Authorization", "Bearer "+p.token.AccessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("error sending request")
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		fmt.Println("error creating event")
+		responseBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to create event: %s", responseBody)
+	}
+
+	return nil
 }
 
 func (p *MicrosoftCalendarProvider) FetchEvents(userID int, client *http.Client) ([]data.Event, error) {
@@ -77,11 +144,6 @@ func (p *MicrosoftCalendarProvider) FetchEvents(userID int, client *http.Client)
 	return dbEvents, nil
 }
 
-func (p *MicrosoftCalendarProvider) CreateEvent(userID int, client *http.Client, event data.Event) error {
-	// Create event in Microsoft Calendar API
-	return nil
-}
-
 type GraphEvent struct {
 	ID                   string        `json:"id"`
 	Subject              string        `json:"subject"`
@@ -124,4 +186,23 @@ func convertGraphEventToEvent(userID int, graphEvent GraphEvent) *data.Event {
 		CreatedAt:       createdAt,
 		UpdatedAt:       updatedAt,
 	}
+}
+
+type CreateGraphEventPayload struct {
+	Subject string `json:"subject"`
+	Body    struct {
+		ContentType string `json:"contentType"`
+		Content     string `json:"content"`
+	} `json:"body"`
+	Start struct {
+		DateTime string `json:"dateTime"`
+		TimeZone string `json:"timeZone"`
+	} `json:"start"`
+	End struct {
+		DateTime string `json:"dateTime"`
+		TimeZone string `json:"timeZone"`
+	} `json:"end"`
+	Location struct {
+		DisplayName string `json:"displayName"`
+	} `json:"location"`
 }

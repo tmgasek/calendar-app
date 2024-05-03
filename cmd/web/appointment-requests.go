@@ -1,13 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net/http"
-	"time"
 
-	"google.golang.org/api/calendar/v3"
-	"google.golang.org/api/option"
+	"github.com/tmgasek/calendar-app/internal/providers"
 )
 
 func (app *application) viewAppointmentRequests(w http.ResponseWriter, r *http.Request) {
@@ -62,113 +59,63 @@ func (app *application) updateAppointmentRequest(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// fully print the request
 	fmt.Printf("request: %v\n", request)
 
-	// Create events in the respective users' calendars using the request details
-	// Here we need to send out the event to both users' linked calendars.
-	// TODO: do this for all associated providers.
-	// GOOGLE
-
-	userTokenGoogle, err := app.models.AuthTokens.Token(userID, "google")
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-	targetUserTokenGoogle, err := app.models.AuthTokens.Token(int(request.RequesterID), "google")
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	// fmt.Printf("startTime: %v\n", startTime)
-	// fmt.Printf("endTime: %v\n", endTime)
-	fmt.Printf("userTokenGoogle: %v\n", userTokenGoogle)
-	fmt.Printf("targetUserTokenGoogle: %v\n", targetUserTokenGoogle)
-
-	ctx := context.Background()
-	userClient := app.googleOAuthConfig.Client(ctx, userTokenGoogle)
-	targetUserClient := app.googleOAuthConfig.Client(ctx, targetUserTokenGoogle)
-
-	userEvent := &calendar.Event{
-		Summary:     request.Title,
+	// Create a new event struct
+	newEventData := providers.NewEventData{
+		Title:       request.Title,
 		Description: request.Description,
-		Start: &calendar.EventDateTime{
-			DateTime: request.StartTime.Format(time.RFC3339),
-		},
-		End: &calendar.EventDateTime{
-			DateTime: request.StartTime.Format(time.RFC3339),
-		},
+		StartTime:   request.StartTime,
+		EndTime:     request.EndTime,
+		Location:    request.Location,
 	}
 
-	user1GoogleService, err := calendar.NewService(ctx, option.WithHTTPClient(userClient))
+	// Handle sending requests to user 1's providers (the user accepting the request)
+	user1Providers, err := providers.GetLinkedProviders(userID, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	_, err = user1GoogleService.Events.Insert("primary", userEvent).Do()
+	for _, provider := range user1Providers {
+		app.infoLog.Printf("Creating event from provider %s for user %d\n", provider.Name(), userID)
+
+		token, err := app.models.AuthTokens.Token(userID, provider.Name())
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+
+		client := provider.CreateClient(r.Context(), token)
+		err = provider.CreateEvent(userID, client, newEventData)
+		if err != nil {
+			app.errorLog.Fatalf("Error creating event: %v\n", err)
+			return
+		}
+	}
+
+	// Handle sending requests to user 2's providers (the user who created the request)
+	user2Providers, err := providers.GetLinkedProviders(request.TargetUserID, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	user2GoogleService, err := calendar.NewService(ctx, option.WithHTTPClient(targetUserClient))
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-	_, err = user2GoogleService.Events.Insert("primary", userEvent).Do()
-	if err != nil {
-		app.serverError(w, err)
-		return
+	for _, provider := range user2Providers {
+		app.infoLog.Printf("Creating event from provider %s for user %d\n", provider.Name(), request.RequesterID)
+
+		token, err := app.models.AuthTokens.Token(request.RequesterID, provider.Name())
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+
+		client := provider.CreateClient(r.Context(), token)
+		err = provider.CreateEvent(request.RequesterID, client, newEventData)
+		if err != nil {
+			app.errorLog.Fatalf("Error creating event: %v\n", err)
+			return
+		}
 	}
 
-	// MICROSOFT
-	outlookEvent := GraphEvent{
-		Subject: request.Title,
-		Body: struct {
-			ContentType string `json:"contentType"`
-			Content     string `json:"content"`
-		}{
-			ContentType: "HTML",
-			Content:     request.Description,
-		},
-		Start: struct {
-			DateTime string `json:"dateTime"`
-			TimeZone string `json:"timeZone"`
-		}{
-			DateTime: request.StartTime.Format(time.RFC3339),
-			TimeZone: "Pacific Standard Time", // or retrieve from user settings
-		},
-		End: struct {
-			DateTime string `json:"dateTime"`
-			TimeZone string `json:"timeZone"`
-		}{
-			DateTime: request.EndTime.Format(time.RFC3339),
-			TimeZone: "Pacific Standard Time",
-		},
-		Location: struct {
-			DisplayName string `json:"displayName"`
-		}{
-			DisplayName: request.Location,
-		},
-	}
-
-	// Send event to Microsoft for the user and target user
-	user1MicrosoftToken, err := app.models.AuthTokens.Token(userID, "microsoft")
-	user1azureClient := app.azureOAuth2Config.Client(r.Context(), user1MicrosoftToken)
-	if err := createOutlookEvent(*user1azureClient, user1MicrosoftToken.AccessToken, outlookEvent); err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	user2MicrosoftToken, err := app.models.AuthTokens.Token(int(request.RequesterID), "microsoft")
-	user2azureClient := app.azureOAuth2Config.Client(r.Context(), user2MicrosoftToken)
-	if err := createOutlookEvent(*user2azureClient, user2MicrosoftToken.AccessToken, outlookEvent); err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	// Delete the appointment request from the database
 	err = app.models.AppointmentRequests.Delete(int(requestID))
 	if err != nil {
 		app.serverError(w, err)

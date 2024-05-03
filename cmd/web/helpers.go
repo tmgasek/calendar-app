@@ -51,7 +51,10 @@ func (app *application) render(
 	// if template written to buffer w/o errors, we are good to go.
 	w.WriteHeader(status)
 
-	buf.WriteTo(w)
+	_, err = buf.WriteTo(w)
+	if err != nil {
+		app.serverError(w, err)
+	}
 }
 
 // write error msg and stack trace to errorLog, send generic 500 res to user
