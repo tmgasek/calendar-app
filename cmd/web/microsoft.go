@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/tmgasek/calendar-app/internal/calendar"
 	"golang.org/x/oauth2"
 )
 
@@ -33,14 +32,6 @@ func (app *application) handleMicrosoftAuthCallback(w http.ResponseWriter, r *ht
 
 	// Save token to the database.
 	err = app.models.AuthTokens.SaveToken(userID, "microsoft", token)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	// Fetch and save Microsoft events to the db
-	client := app.azureOAuth2Config.Client(r.Context(), token)
-	err = calendar.FetchAndSaveOutlookEvents(userID, client, &app.models)
 	if err != nil {
 		app.serverError(w, err)
 		return

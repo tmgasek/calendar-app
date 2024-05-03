@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/tmgasek/calendar-app/internal/calendar"
+	"github.com/tmgasek/calendar-app/internal/providers"
 )
 
 type HourlyAvailability struct {
@@ -18,22 +18,35 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 
 	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
 
-	// Fetch and save Google events to the db
-	token, err := app.models.AuthTokens.Token(userID, "google")
-	googleClient := app.googleOAuthConfig.Client(r.Context(), token)
-	err = calendar.FetchAndSaveGoogleEvents(userID, googleClient, &app.models)
+	providers, err := providers.GetLinkedProviders(userID, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	// Fetch and save Microsoft events to the db
-	token, err = app.models.AuthTokens.Token(userID, "microsoft")
-	outlookClient := app.azureOAuth2Config.Client(r.Context(), token)
-	err = calendar.FetchAndSaveOutlookEvents(userID, outlookClient, &app.models)
-	if err != nil {
-		app.serverError(w, err)
-		return
+	for _, provider := range providers {
+		app.infoLog.Printf("Getting events from provider %s for user %d\n", provider.Name(), userID)
+
+		token, err := app.models.AuthTokens.Token(userID, provider.Name())
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+
+		client := provider.CreateClient(r.Context(), token)
+		events, err := provider.FetchEvents(userID, client)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+
+		for _, event := range events {
+			err = app.models.Events.Insert(&event)
+			if err != nil {
+				app.serverError(w, err)
+				return
+			}
+		}
 	}
 
 	// Get the event data from the db

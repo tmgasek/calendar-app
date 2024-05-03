@@ -1,4 +1,4 @@
-package calendar
+package providers
 
 import (
 	"context"
@@ -7,14 +7,52 @@ import (
 	"time"
 
 	"github.com/tmgasek/calendar-app/internal/data"
+	"golang.org/x/oauth2"
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
 )
 
-func FetchAndSaveGoogleEvents(userID int, client *http.Client, db *data.Models) error {
+type GoogleCalendarProvider struct {
+	config *oauth2.Config
+}
+
+func (p *GoogleCalendarProvider) CreateClient(ctx context.Context, token *oauth2.Token) *http.Client {
+	return p.config.Client(ctx, token)
+}
+
+func (p *GoogleCalendarProvider) Name() string {
+	return "google"
+}
+
+func (p *GoogleCalendarProvider) CreateEvent(userID int, client *http.Client, newEventData NewEventData) error {
+	event := &calendar.Event{
+		Summary:     newEventData.Title,
+		Description: newEventData.Description,
+		Start: &calendar.EventDateTime{
+			DateTime: newEventData.StartTime.Format(time.RFC3339),
+		},
+		End: &calendar.EventDateTime{
+			DateTime: newEventData.EndTime.Format(time.RFC3339),
+		},
+	}
+
 	srv, err := calendar.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
 		return err
+	}
+
+	_, err = srv.Events.Insert("primary", event).Do()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *GoogleCalendarProvider) FetchEvents(userID int, client *http.Client) ([]data.Event, error) {
+	srv, err := calendar.NewService(context.Background(), option.WithHTTPClient(client))
+	if err != nil {
+		return nil, err
 	}
 
 	// Call the Google Calendar API to fetch events
@@ -22,27 +60,23 @@ func FetchAndSaveGoogleEvents(userID int, client *http.Client, db *data.Models) 
 	events, err := srv.Events.List("primary").ShowDeleted(false).
 		SingleEvents(true).TimeMin(t).MaxResults(10).OrderBy("startTime").Do()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// No events found
 	if len(events.Items) == 0 {
-		return nil
+		return nil, nil
 	}
+
+	dbEvents := make([]data.Event, 0, len(events.Items))
 
 	// Go over each event and save to db.
 	for _, item := range events.Items {
 		// Convert from Google event to own unified Event struct.
 		event := convertGoogleEventToEvent(userID, item)
-
-		// Save event to the database.
-		err := db.Events.Insert(event)
-		if err != nil {
-			return err
-		}
-
+		dbEvents = append(dbEvents, *event)
 	}
-	return nil
+	return dbEvents, nil
 }
 
 func convertGoogleEventToEvent(userID int, googleEvent *calendar.Event) *data.Event {

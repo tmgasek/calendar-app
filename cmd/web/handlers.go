@@ -11,7 +11,10 @@ import (
 )
 
 func ping(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("OK"))
+	_, err := w.Write([]byte("OK"))
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
 }
 
 func (app *application) readIDParam(r *http.Request) (int64, error) {
