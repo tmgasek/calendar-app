@@ -1,0 +1,33 @@
+{{define "title"}}Requests{{end}}
+
+{{define "main"}}
+<div class="container">
+  <h1>Requests</h1>
+
+  <div class="calendar-links">
+    <a href="/oauth/google/link" class="btn btn-google">Link Google Calendar</a>
+    <a href="/oauth/microsoft/link" class="btn btn-microsoft">Link Outlook Calendar</a>
+  </div>
+
+  <div class="">
+    <ul>
+      {{range .AppointmentRequests}}
+      <li>
+        <div class="">
+          <h3>{{.Title}}</h3>
+          <p>Requester: {{.RequesterID}}</p>
+          <p>{{.StartTime}} - {{.EndTime}}</p>
+          <p>{{.Location}}</p>
+	  <p>Requester: {{.Requester.Name}} ({{.Requester.Email}})</p>
+	  <form action="/request/{{.RequestID}}/update" method="POST">
+	    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}" />
+	    <button type="submit" name="action" value="confirmed">Accept</button>
+	    <button type="submit" name="action" value="declined">Decline</button>
+	  </form>
+        </div>
+      </li>
+      {{end}}
+    </ul>
+  </div>
+</div>
+{{end}}
