@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/tmgasek/calendar-app/internal/calendar"
 	"golang.org/x/oauth2"
 )
 
@@ -50,9 +49,6 @@ func (app *application) handleGoogleCalendarCallback(w http.ResponseWriter, r *h
 		app.serverError(w, err)
 		return
 	}
-
-	client := app.googleOAuthConfig.Client(ctx, token)
-	calendar.FetchAndSaveGoogleEvents(userID, client, &app.models)
 
 	// Redirect back to homepage.
 	http.Redirect(w, r, "/", http.StatusSeeOther)

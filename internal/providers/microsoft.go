@@ -1,9 +1,8 @@
-package calendar
+package providers
 
 import (
-	"database/sql"
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,18 +10,23 @@ import (
 	"time"
 
 	"github.com/tmgasek/calendar-app/internal/data"
+	"golang.org/x/oauth2"
 )
 
-func FetchAndSaveOutlookEvents(userID int, client *http.Client, db *data.Models) error {
-	token, err := db.AuthTokens.Token(userID, "microsoft")
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			// No token found, so return without error
-			return nil
-		}
-		return err
-	}
+type MicrosoftCalendarProvider struct {
+	token  *oauth2.Token
+	config *oauth2.Config
+}
 
+func (p *MicrosoftCalendarProvider) Name() string {
+	return "microsoft"
+}
+
+func (p *MicrosoftCalendarProvider) CreateClient(ctx context.Context, token *oauth2.Token) *http.Client {
+	return p.config.Client(ctx, token)
+}
+
+func (p *MicrosoftCalendarProvider) FetchEvents(userID int, client *http.Client) ([]data.Event, error) {
 	// Define the time range for calendar events
 	//TODO: need to handle cases if one of these dates is in different timezome
 	// for example, endTime is now in british summer time.
@@ -30,24 +34,21 @@ func FetchAndSaveOutlookEvents(userID int, client *http.Client, db *data.Models)
 	// Make endtime one year from now
 	endTime := time.Now().AddDate(1, 0, 0).Format("2006-01-02T15:04:05-07:00")
 
-	fmt.Printf("startTime: %v\n", startTime)
-	fmt.Printf("endTime: %v\n", endTime)
-
 	// Create request to Microsoft Graph API
 	reqURL := fmt.Sprintf("https://graph.microsoft.com/v1.0/me/calendarview?startDateTime=%s&endDateTime=%s", url.QueryEscape(startTime), url.QueryEscape(endTime))
 
 	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Set the Authorization header with the access token
-	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+	req.Header.Set("Authorization", "Bearer "+p.token.AccessToken)
 
 	// Send the request
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
@@ -55,29 +56,29 @@ func FetchAndSaveOutlookEvents(userID int, client *http.Client, db *data.Models)
 	// Read and log the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Unmarshal the response body into the GraphEvent slice
-	var data struct {
+	var resData struct {
 		Value []GraphEvent `json:"value"`
 	}
 
-	if err := json.Unmarshal(body, &data); err != nil {
-		return err
+	if err := json.Unmarshal(body, &resData); err != nil {
+		return nil, err
 	}
 
-	// Convert the Graph API events to your Event struct and save them
-	for _, graphEvent := range data.Value {
+	dbEvents := make([]data.Event, 0, len(resData.Value))
+	for _, graphEvent := range resData.Value {
 		event := convertGraphEventToEvent(userID, graphEvent)
-
-		// Save event to the database.
-		err := db.Events.Insert(event)
-		if err != nil {
-			return err
-		}
+		dbEvents = append(dbEvents, *event)
 	}
 
+	return dbEvents, nil
+}
+
+func (p *MicrosoftCalendarProvider) CreateEvent(userID int, client *http.Client, event data.Event) error {
+	// Create event in Microsoft Calendar API
 	return nil
 }
 
