@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	// "github.com/tmgasek/calendar-app/internal/data"
 	"github.com/tmgasek/calendar-app/internal/providers"
 )
 
@@ -115,6 +116,8 @@ func (app *application) updateAppointmentRequest(w http.ResponseWriter, r *http.
 			return
 		}
 	}
+
+	// Save the new appointment to the database.
 
 	err = app.models.AppointmentRequests.Delete(int(requestID))
 	if err != nil {
