@@ -94,7 +94,7 @@ func (app *application) updateAppointmentRequest(w http.ResponseWriter, r *http.
 	}
 
 	// Handle sending requests to user 2's providers (the user who created the request)
-	user2Providers, err := providers.GetLinkedProviders(request.TargetUserID, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
+	user2Providers, err := providers.GetLinkedProviders(request.RequesterID, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
 	if err != nil {
 		app.serverError(w, err)
 		return
