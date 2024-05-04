@@ -2,6 +2,8 @@ package data
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -59,6 +61,10 @@ func (m *AuthTokenModel) Token(userID int, authProvider string) (*oauth2.Token, 
 	row := m.DB.QueryRow(query, userID, authProvider)
 	err := row.Scan(&token.AccessToken, &token.RefreshToken, &token.TokenType, &token.Expiry)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			fmt.Printf("No %s token found for user %d\n", authProvider, userID)
+			return nil, nil
+		}
 		return nil, err
 	}
 	return &oauth2.Token{
