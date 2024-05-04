@@ -24,7 +24,7 @@ func (p *GoogleCalendarProvider) Name() string {
 	return "google"
 }
 
-func (p *GoogleCalendarProvider) CreateEvent(userID int, client *http.Client, newEventData NewEventData) error {
+func (p *GoogleCalendarProvider) CreateEvent(userID int, client *http.Client, newEventData NewEventData) (eventID string, err error) {
 	event := &calendar.Event{
 		Summary:     newEventData.Title,
 		Description: newEventData.Description,
@@ -38,15 +38,15 @@ func (p *GoogleCalendarProvider) CreateEvent(userID int, client *http.Client, ne
 
 	srv, err := calendar.NewService(context.Background(), option.WithHTTPClient(client))
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	_, err = srv.Events.Insert("primary", event).Do()
+	googleEvent, err := srv.Events.Insert("primary", event).Do()
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return googleEvent.Id, nil
 }
 
 func (p *GoogleCalendarProvider) FetchEvents(userID int, client *http.Client) ([]data.Event, error) {
