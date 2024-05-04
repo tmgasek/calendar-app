@@ -13,14 +13,18 @@
     <h2>Events</h2>
     <ul>
       {{range .Events}}
-      <li>
-        <div class="event-summary">
-          <h3>{{.Title}}</h3>
-          <p>{{.Description}}</p>
-          <p>{{.StartTime}} - {{.EndTime}}</p>
-          <p>{{.Location}}</p>
-        </div>
-      </li>
+        <li>
+          <div class="event-summary">
+            <h3>{{.Title}}</h3>
+            <p>{{.Description}}</p>
+            <p>{{.StartTime}} - {{.EndTime}}</p>
+            <p>{{.Location}}</p>
+              <form action="/appointments/delete/{{.ProviderEventID}}?provider={{.Provider}}" method="POST">
+              <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}" />
+              <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+          </div>
+        </li>
       {{end}}
     </ul>
   </div>

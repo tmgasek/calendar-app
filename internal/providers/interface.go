@@ -13,6 +13,7 @@ type CalendarProvider interface {
 	CreateClient(ctx context.Context, token *oauth2.Token) *http.Client
 	FetchEvents(userID int, client *http.Client) ([]data.Event, error)
 	CreateEvent(userID int, client *http.Client, newEventData NewEventData) error
+	DeleteEvent(userID int, client *http.Client, eventID string) error
 	Name() string
 }
 

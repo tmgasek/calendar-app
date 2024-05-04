@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/tmgasek/calendar-app/internal/data"
 	"github.com/tmgasek/calendar-app/internal/validator"
 )
@@ -95,4 +96,42 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 	}
 
 	app.infoLog.Println("********** Email sent")
+}
+
+func (app *application) deleteAppointment(w http.ResponseWriter, r *http.Request) {
+	// Get the event ID from the URL parameters.
+	params := httprouter.ParamsFromContext(r.Context())
+	eventID := params.ByName("id")
+	if eventID == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	// Get the provider from the URL query parameters.
+	provider := r.URL.Query().Get("provider")
+	if provider == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+
+	app.infoLog.Printf("Deleting event %s from provider %s for user %d\n", eventID, provider, userID)
+
+	// Delete the event from the provider's calendar
+	// err := app.deleteEventFromProvider(userID, provider, eventID)
+	// if err != nil {
+	// 	app.serverError(w, err)
+	// 	return
+	// }
+
+	// Remove the event from the database
+	// err = app.models.Events.DeleteByProviderEventID(eventID)
+	// if err != nil {
+	// 	app.serverError(w, err)
+	// 	return
+	// }
+
+	// Redirect back to the profile page
+	http.Redirect(w, r, "/user/profile", http.StatusSeeOther)
 }

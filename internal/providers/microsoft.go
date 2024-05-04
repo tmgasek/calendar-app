@@ -19,6 +19,27 @@ type MicrosoftCalendarProvider struct {
 	config *oauth2.Config
 }
 
+func (p *MicrosoftCalendarProvider) DeleteEvent(userID int, client *http.Client, eventID string) error {
+	req, err := http.NewRequest("DELETE", "https://graph.microsoft.com/v1.0/me/events/"+eventID, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+p.token.AccessToken)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("failed to delete event: %s", resp.Status)
+	}
+
+	return nil
+}
+
 func (p *MicrosoftCalendarProvider) Name() string {
 	return "microsoft"
 }

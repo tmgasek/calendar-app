@@ -16,6 +16,20 @@ type GoogleCalendarProvider struct {
 	config *oauth2.Config
 }
 
+func (p *GoogleCalendarProvider) DeleteEvent(userID int, client *http.Client, eventID string) error {
+	srv, err := calendar.NewService(context.Background(), option.WithHTTPClient(client))
+	if err != nil {
+		return err
+	}
+
+	err = srv.Events.Delete("primary", eventID).Do()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (p *GoogleCalendarProvider) CreateClient(ctx context.Context, token *oauth2.Token) *http.Client {
 	return p.config.Client(ctx, token)
 }
