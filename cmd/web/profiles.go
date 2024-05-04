@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/tmgasek/calendar-app/internal/data"
 	"github.com/tmgasek/calendar-app/internal/providers"
 )
 
@@ -14,8 +15,7 @@ type HourlyAvailability struct {
 }
 
 func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
-	data := app.newTemplateData(r)
-
+	templateData := app.newTemplateData(r)
 	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
 
 	providers, err := providers.GetLinkedProviders(userID, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
@@ -24,9 +24,10 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var allEvents []*data.Event
+
 	for _, provider := range providers {
 		app.infoLog.Printf("Getting events from provider %s for user %d\n", provider.Name(), userID)
-
 		token, err := app.models.AuthTokens.Token(userID, provider.Name())
 		if err != nil {
 			app.serverError(w, err)
@@ -41,19 +42,10 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, event := range events {
-			err = app.models.Events.Insert(&event)
-			if err != nil {
-				app.serverError(w, err)
-				return
-			}
+			// Make copy to avoid overwriting.
+			eventCopy := event
+			allEvents = append(allEvents, &eventCopy)
 		}
-	}
-
-	// Get the event data from the db
-	events, err := app.models.Events.GetByUserID(userID)
-	if err != nil {
-		app.serverError(w, err)
-		return
 	}
 
 	// Determine the range of dates to display. For now show 14 days from today.
@@ -67,7 +59,6 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 			Date:  d.Format("2006-01-02"),
 			Hours: [24]string{},
 		}
-
 		for i := range day.Hours {
 			// Init all to free
 			day.Hours[i] = "free"
@@ -76,10 +67,9 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Mark the hours that are busy based on user's events
-	for _, event := range events {
+	for _, event := range allEvents {
 		eventStart := event.StartTime
 		eventEnd := event.EndTime
-
 		// Only process event within our range
 		if eventStart.Before(start) || eventEnd.After(end) {
 			fmt.Printf("Event outside of range: %s - %s\n", eventStart, eventEnd)
@@ -94,25 +84,24 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 
 			startHour := eventStart.Hour()
 			endHour := eventEnd.Hour()
-
 			for h := startHour; h <= endHour && h < 24; h++ {
 				day.Hours[h] = "busy"
 			}
 		}
 	}
 
-	data.Events = events
-	data.HourlyAvailability = availability
-	data.Hours = [16]int{
+	templateData.Events = allEvents
+	templateData.HourlyAvailability = availability
+	templateData.Hours = [16]int{
 		7, 8, 9, 10, 11,
 		12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
 	}
 
-	app.render(w, http.StatusOK, "profile.tmpl", data)
+	app.render(w, http.StatusOK, "profile.tmpl", templateData)
 }
 
 func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) {
-	data := app.newTemplateData(r)
+	templateData := app.newTemplateData(r)
 
 	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
 	fmt.Printf("userID: %v\n", userID)
@@ -123,11 +112,34 @@ func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Get the event data
-	events, err := app.models.Events.GetByUserID(int(targetUserID))
+	providers, err := providers.GetLinkedProviders(int(targetUserID), &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
 	if err != nil {
 		app.serverError(w, err)
 		return
+	}
+
+	var allEvents []*data.Event
+
+	for _, provider := range providers {
+		app.infoLog.Printf("Getting events from provider %s for user %d\n", provider.Name(), int(targetUserID))
+		token, err := app.models.AuthTokens.Token(int(targetUserID), provider.Name())
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+
+		client := provider.CreateClient(r.Context(), token)
+		events, err := provider.FetchEvents(int(targetUserID), client)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+
+		for _, event := range events {
+			// Make copy to avoid overwriting.
+			eventCopy := event
+			allEvents = append(allEvents, &eventCopy)
+		}
 	}
 
 	// Determine the range of dates to display. For now show 14 days from today.
@@ -150,7 +162,7 @@ func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Mark the hours that are busy based on user's events
-	for _, event := range events {
+	for _, event := range allEvents {
 		eventStart := event.StartTime
 		eventEnd := event.EndTime
 
@@ -175,12 +187,12 @@ func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	data.Events = events
-	data.HourlyAvailability = availability
-	data.Hours = [16]int{
+	templateData.Events = allEvents
+	templateData.HourlyAvailability = availability
+	templateData.Hours = [16]int{
 		7, 8, 9, 10, 11,
 		12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
 	}
 
-	app.render(w, http.StatusOK, "user-calendar.tmpl", data)
+	app.render(w, http.StatusOK, "user-calendar.tmpl", templateData)
 }

@@ -27,7 +27,7 @@ func (p *MicrosoftCalendarProvider) CreateClient(ctx context.Context, token *oau
 	return p.config.Client(ctx, token)
 }
 
-func (p *MicrosoftCalendarProvider) CreateEvent(userID int, client *http.Client, newEventData NewEventData) error {
+func (p *MicrosoftCalendarProvider) CreateEvent(userID int, client *http.Client, newEventData NewEventData) (eventID string, err error) {
 	event := CreateGraphEventPayload{
 		Subject: newEventData.Title,
 		Body: struct {
@@ -57,40 +57,47 @@ func (p *MicrosoftCalendarProvider) CreateEvent(userID int, client *http.Client,
 			DisplayName: newEventData.Location,
 		},
 	}
-	// print all the values of the event
-	fmt.Printf("event: %v\n", event)
 
 	// Send the event to Microsoft
 	eventJSON, err := json.Marshal(event)
 	if err != nil {
 		fmt.Println("error marshalling event")
-		return err
+		return "", err
 	}
 
 	req, err := http.NewRequest("POST", "https://graph.microsoft.com/v1.0/me/events", bytes.NewBuffer(eventJSON))
 	if err != nil {
 		fmt.Println("error creating request")
-		return err
+		return "", err
 	}
 
-	fmt.Println("token: ", p.token.AccessToken)
 	req.Header.Set("Authorization", "Bearer "+p.token.AccessToken)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("error sending request")
-		return err
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
 		fmt.Println("error creating event")
 		responseBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to create event: %s", responseBody)
+		return "", fmt.Errorf("failed to create event: %s", responseBody)
 	}
 
-	return nil
+	// Get the event ID from the response
+	var resData struct {
+		ID string `json:"id"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&resData); err != nil {
+		fmt.Println("error decoding response")
+		return "", err
+	}
+
+	return resData.ID, nil
 }
 
 func (p *MicrosoftCalendarProvider) FetchEvents(userID int, client *http.Client) ([]data.Event, error) {
