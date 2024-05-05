@@ -1,0 +1,21 @@
+{{define "title"}}User Search{{end}}
+
+{{define "main"}}
+<h1>User Search</h1>
+
+<form action="/users/search" method="GET">
+    <input type="text" name="query" placeholder="Search by email or name" required>
+    <button type="submit">Search</button>
+</form>
+
+{{if .Users}}
+    <h2>Search Results</h2>
+    <ul>
+        {{range .Users}}
+            <li><a href="/users/profile/{{.ID}}">{{.Name}} ({{.Email}})</a></li>
+        {{end}}
+    </ul>
+{{else}}
+    <p>No users found.</p>
+{{end}}
+{{end}}

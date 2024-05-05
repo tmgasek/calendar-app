@@ -44,7 +44,9 @@ func (app *application) routes() http.Handler {
 
 	// Profile views
 	router.Handler(http.MethodGet, "/user/profile", protected.ThenFunc(app.userProfile))
-	router.Handler(http.MethodGet, "/users/:id/calendar", protected.ThenFunc(app.viewUserProfile))
+	router.Handler(http.MethodGet, "/users/profile/:id", protected.ThenFunc(app.viewUserProfile))
+	// User search
+	router.Handler(http.MethodGet, "/users/search", protected.ThenFunc(app.searchUsers))
 
 	// Appointments
 	router.Handler(http.MethodGet, "/appointments", protected.ThenFunc(app.viewAppointments))

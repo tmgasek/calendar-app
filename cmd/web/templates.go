@@ -23,6 +23,7 @@ type templateData struct {
 	AppointmentRequests []*data.AppointmentRequest
 	Appointments        []*data.Appointment
 	User                *data.User
+	Users               []*data.User
 	Settings            *data.Settings
 }
 
