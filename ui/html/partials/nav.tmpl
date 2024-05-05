@@ -1,28 +1,26 @@
 {{define "nav"}}
 <nav>
-    <div>
-        <a href="/">Home</a>
-        <!-- Toggle the link based on authentication status -->
-        {{if .IsAuthenticated}}
-        {{end}}
-    </div>
-    <div>
-        <!-- Toggle the links based on authentication status -->
-        {{if .IsAuthenticated}}
+    <ul>
+        <li><a href="/" class="contrast">Calendar Genie</a></li>
+    </ul>
+    {{if .IsAuthenticated}}
+    <ul>
+        <li><a href="/user/profile" class="contrast">Profile</a></li>
+        <li><a href="/requests" class="contrast">Requests</a></li>
+        <li><a href="/appointments" class="contrast">Appointments</a></li>
+        <li><a href="/settings" class="contrast">Settings</a></li>
+
         <form action="/user/logout" method="POST">
             <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
             <button>Logout</button>
         </form>
-        <a href="/user/profile">Profile</a>
-        <a href="/requests">Requests</a>
-        <a href="/appointments">Appointments</a>
-        <a href="/oauth/microsoft/link">link microsoft</a>
-        <a href="/oauth/google/link">link google</a>
+    </ul>
 
-        {{else}}
-        <a href="/user/signup">Signup</a>
-        <a href="/user/login">Login</a>
-        {{end}}
-    </div>
+    {{else}}
+    <ul>
+        <li><a href="/user/signup" class="contrast">Signup</a></li>
+        <li><a href="/user/login" class="contrast">Login</a></li>
+    </ul>
+    {{end}}
 </nav>
 {{end}}

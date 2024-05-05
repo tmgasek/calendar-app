@@ -4,28 +4,24 @@
 
 <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark" />
     <title>{{template "title" .}} - Calendar Genie</title>
-    <!-- Link to the CSS stylesheet and favicon -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
     <link rel="stylesheet" href="/static/css/main.css" />
     <link rel="shortcut icon" href="/static/img/favicon.ico" type="image/x-icon" />
-    <!-- Also link to some fonts hosted by Google -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700" />
 </head>
 
 <body>
-    <header>
-        <h1><a href="/">Calendar Genie</a></h1>
-    </header>
     {{template "nav" .}}
-    <main>
+    <main class="container">
         {{template "main" .}}
     </main>
-    <footer>
-        <footer>
-            Powered by <a href="https://golang.org/">Go</a> in {{.CurrentYear}}
-        </footer>
-        <!-- And include the JavaScript file -->
-        <script src="/static/js/main.js" type="text/javascript"></script>
+    <footer class="container">
+        Powered by <a href="https://golang.org/">Go</a> in {{.CurrentYear}}
+    </footer>
+    <!-- And include the JavaScript file -->
+    <script src="/static/js/main.js" type="text/javascript"></script>
 </body>
 
 </html>
