@@ -12,11 +12,8 @@
           <p>{{.Description}}</p>
           <p>{{.StartTime}} - {{.EndTime}}</p>
           <p>{{.Location}}</p>
-          <form action="/appointments/delete" method="POST">
+          <form action="/appointments/delete/{{.ID}}" method="POST">
             <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}" />
-            <input type="hidden" name="appointment_id" value="{{.ID}}">
-            <input type="hidden" name="google_event_id" value="{{.GoogleEventID}}">
-            <input type="hidden" name="microsoft_event_id" value="{{.MicrosoftEventID}}">
             <button type="submit">Delete</button>
           </form>
         </div>

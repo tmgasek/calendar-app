@@ -26,3 +26,18 @@ func GetLinkedProviders(userID int, db *data.Models, googleConfig, microsoftConf
 
 	return providers, nil
 }
+
+func GetProviderByName(userID int, name string, db *data.Models, googleConfig, microsoftConfig *oauth2.Config) (CalendarProvider, error) {
+	switch name {
+	case "google":
+		return &GoogleCalendarProvider{config: googleConfig}, nil
+	case "microsoft":
+		microsoftToken, err := db.AuthTokens.Token(userID, "microsoft")
+		if err != nil {
+			return nil, err
+		}
+		return &MicrosoftCalendarProvider{token: microsoftToken, config: microsoftConfig}, nil
+	default:
+		return nil, nil
+	}
+}

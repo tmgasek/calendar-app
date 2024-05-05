@@ -87,8 +87,8 @@ func (app *application) routes() http.Handler {
 
 	// Appointments
 	router.Handler(http.MethodGet, "/appointments", protected.ThenFunc(app.viewAppointments))
-	router.Handler(http.MethodPost, "/appointments/create", protected.ThenFunc(app.createAppointment))
-	router.Handler(http.MethodPost, "/appointments/delete", protected.ThenFunc(app.deleteAppointment))
+	router.Handler(http.MethodPost, "/appointments/create", protected.ThenFunc(app.createAppointmentRequest))
+	router.Handler(http.MethodPost, "/appointments/delete/:id", protected.ThenFunc(app.deleteAppointment))
 
 	// Appointment Requests
 	router.Handler(http.MethodGet, "/requests", protected.ThenFunc(app.viewAppointmentRequests))
