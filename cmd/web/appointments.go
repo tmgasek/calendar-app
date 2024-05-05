@@ -16,7 +16,6 @@ type appointmentCreateForm struct {
 	StartTime           string `form:"start_time"`
 	EndTime             string `form:"end_time"`
 	Location            string `form:"location"`
-	TargetUserID        int64  `form:"target_user_id"`
 	validator.Validator `form:"-"`
 }
 

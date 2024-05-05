@@ -4,13 +4,8 @@
 <div class="container">
   <h1>Profile</h1>
 
-  <div class="calendar-links">
-    <a href="/oauth/google/link" class="btn btn-google">Link Google Calendar</a>
-    <a href="/oauth/microsoft/link" class="btn btn-microsoft">Link Outlook Calendar</a>
-  </div>
-
-  <div class="even-summary-list">
-    <h2>Events</h2>
+  <div>
+    <h2>Events DEBUG</h2>
     <ul>
       {{range .Events}}
       <li>
@@ -26,8 +21,8 @@
   </div>
 
   <div>
-    <h2>Book a meeting</h2>
-    <form action="/appointments/create" method="post">
+    <h2>Book an appointment</h2>
+    <form action="/appointments/create/{{.TargetUserID}}" method="post">
       <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
       <div class="form-group">
         <label for="title">Title</label>
@@ -48,10 +43,6 @@
       <div class="form-group">
         <label for="end_time">End Time</label>
         <input type="datetime-local" name="end_time" id="end_time" class="form-control" required value="2024-05-11T20:00">
-      </div>
-      <div class="form-group">
-        <label for="target_user_id">target user id</label>
-        <input type="number" name="target_user_id" id="target_user_id" class="form-control" required value=1>
       </div>
       <button type="submit" class="btn btn-primary">Book</button>
     </form>

@@ -13,17 +13,19 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 	fmt.Println("createAppointment")
 	// Get the authenticated user ID
 	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+	// Get the target user ID from the URL
+	targetUserID, err := app.readIDParam(r)
 
 	var form appointmentCreateForm
 
-	err := app.decodePostForm(r, &form)
+	err = app.decodePostForm(r, &form)
 	if err != nil {
 		app.errorLog.Println(err)
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
-	targetUser, err := app.models.Users.Get(int(form.TargetUserID))
+	targetUser, err := app.models.Users.Get(int(targetUserID))
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -54,7 +56,7 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 	// Create the appointment request.
 	appointmentRequest := &data.AppointmentRequest{
 		RequesterID:  int(userID),
-		TargetUserID: int(form.TargetUserID),
+		TargetUserID: int(targetUserID),
 		Title:        form.Title,
 		Description:  form.Description,
 		StartTime:    startTime,
@@ -82,7 +84,8 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 		return
 	}
 
-	app.infoLog.Println("********** Email sent")
+	app.sessionManager.Put(r.Context(), "flash", "Appointment request sent!")
+	http.Redirect(w, r, fmt.Sprintf("/users/profile/%d", targetUserID), http.StatusSeeOther)
 }
 
 func (app *application) viewAppointmentRequests(w http.ResponseWriter, r *http.Request) {

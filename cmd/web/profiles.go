@@ -193,6 +193,7 @@ func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) 
 		7, 8, 9, 10, 11,
 		12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
 	}
+	templateData.TargetUserID = int(targetUserID)
 
 	app.render(w, http.StatusOK, "user-calendar.tmpl", templateData)
 }
