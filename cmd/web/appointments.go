@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/tmgasek/calendar-app/internal/data"
+	"github.com/tmgasek/calendar-app/internal/providers"
 	"github.com/tmgasek/calendar-app/internal/validator"
 )
 
@@ -95,4 +97,83 @@ func (app *application) createAppointment(w http.ResponseWriter, r *http.Request
 	}
 
 	app.infoLog.Println("********** Email sent")
+}
+
+func (app *application) deleteAppointment(w http.ResponseWriter, r *http.Request) {
+	// Get the event ID from the URL parameters.
+	appointmentID := r.FormValue("appointment_id")
+	googleEventID := r.FormValue("google_event_id")
+	microsoftEventID := r.FormValue("microsoft_event_id")
+
+	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+
+	fmt.Println("appointmentID: ", appointmentID)
+	fmt.Println("googleEventID: ", googleEventID)
+	fmt.Println("microsoftEventID: ", microsoftEventID)
+	fmt.Println("userID: ", userID)
+
+	if appointmentID == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	providers, err := providers.GetLinkedProviders(userID, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	for _, provider := range providers {
+		token, err := app.models.AuthTokens.Token(userID, provider.Name())
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+
+		client := provider.CreateClient(r.Context(), token)
+
+		if provider.Name() == "google" {
+			err = provider.DeleteEvent(userID, client, provider.Name(), googleEventID)
+		} else if provider.Name() == "microsoft" {
+			err = provider.DeleteEvent(userID, client, provider.Name(), microsoftEventID)
+		}
+
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+	}
+
+	// Convert appointmentID to int.
+	appointmentIDInt, err := strconv.Atoi(appointmentID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	// Delete the appointment from the database.
+	err = app.models.Appointments.Delete(appointmentIDInt)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Redirect back to the profile page
+	http.Redirect(w, r, "/user/profile", http.StatusSeeOther)
+}
+
+func (app *application) viewAppointments(w http.ResponseWriter, r *http.Request) {
+	templateData := app.newTemplateData(r)
+	// Get the authenticated user ID
+	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+
+	// Get the user's appointments
+	appointments, err := app.models.Appointments.GetByUserID(userID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Render the appointments
+	templateData.Appointments = appointments
+	app.render(w, http.StatusOK, "appointments.tmpl", templateData)
 }

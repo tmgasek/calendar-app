@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -22,6 +23,23 @@ func (p *GoogleCalendarProvider) CreateClient(ctx context.Context, token *oauth2
 
 func (p *GoogleCalendarProvider) Name() string {
 	return "google"
+}
+
+func (p *GoogleCalendarProvider) DeleteEvent(userID int, client *http.Client, provider, eventID string) error {
+	if provider != "google" {
+		return fmt.Errorf("invalid provider")
+	}
+	srv, err := calendar.NewService(context.Background(), option.WithHTTPClient(client))
+	if err != nil {
+		return err
+	}
+
+	err = srv.Events.Delete("primary", eventID).Do()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *GoogleCalendarProvider) CreateEvent(userID int, client *http.Client, newEventData NewEventData) (eventID string, err error) {

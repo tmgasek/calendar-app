@@ -27,6 +27,31 @@ func (p *MicrosoftCalendarProvider) CreateClient(ctx context.Context, token *oau
 	return p.config.Client(ctx, token)
 }
 
+func (p *MicrosoftCalendarProvider) DeleteEvent(userID int, client *http.Client, provider, eventID string) error {
+	if provider != "microsoft" {
+		return fmt.Errorf("invalid provider")
+	}
+
+	req, err := http.NewRequest("DELETE", "https://graph.microsoft.com/v1.0/me/events/"+eventID, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+p.token.AccessToken)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("failed to delete event: %s", resp.Status)
+	}
+
+	return nil
+}
+
 func (p *MicrosoftCalendarProvider) CreateEvent(userID int, client *http.Client, newEventData NewEventData) (eventID string, err error) {
 	event := CreateGraphEventPayload{
 		Subject: newEventData.Title,

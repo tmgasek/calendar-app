@@ -85,8 +85,10 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/user/profile", protected.ThenFunc(app.userProfile))
 	router.Handler(http.MethodGet, "/users/:id/calendar", protected.ThenFunc(app.viewUserProfile))
 
-	// Create a new appointment between two users
+	// Appointments
+	router.Handler(http.MethodGet, "/appointments", protected.ThenFunc(app.viewAppointments))
 	router.Handler(http.MethodPost, "/appointments/create", protected.ThenFunc(app.createAppointment))
+	router.Handler(http.MethodPost, "/appointments/delete", protected.ThenFunc(app.deleteAppointment))
 
 	// Appointment Requests
 	router.Handler(http.MethodGet, "/requests", protected.ThenFunc(app.viewAppointmentRequests))
