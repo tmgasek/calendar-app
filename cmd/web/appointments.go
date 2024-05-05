@@ -75,6 +75,7 @@ func (app *application) deleteAppointment(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	app.sessionManager.Put(r.Context(), "flash", "Appointment successfully deleted!")
 	// Redirect back to the profile page
 	http.Redirect(w, r, "/appointments", http.StatusSeeOther)
 }

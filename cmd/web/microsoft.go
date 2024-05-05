@@ -37,6 +37,7 @@ func (app *application) handleMicrosoftAuthCallback(w http.ResponseWriter, r *ht
 		return
 	}
 
+	app.sessionManager.Put(r.Context(), "flash", "Microsoft account linked successfully!")
 	// Redirect back to homepage.
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

@@ -213,5 +213,6 @@ func (app *application) updateAppointmentRequest(w http.ResponseWriter, r *http.
 		return
 	}
 
+	app.sessionManager.Put(r.Context(), "flash", "Appointment confirmed!")
 	http.Redirect(w, r, "/requests", http.StatusSeeOther)
 }

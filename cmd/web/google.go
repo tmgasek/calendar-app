@@ -48,6 +48,7 @@ func (app *application) handleGoogleCalendarCallback(w http.ResponseWriter, r *h
 		return
 	}
 
+	app.sessionManager.Put(r.Context(), "flash", "Google account linked successfully!")
 	// Redirect back to homepage.
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
