@@ -111,3 +111,33 @@ func (m *UserModel) Get(id int) (*User, error) {
 
 	return user, nil
 }
+
+func (m *UserModel) SearchUsers(query string) ([]*User, error) {
+	query = "%" + query + "%"
+	stmt := `
+        SELECT id, name, email
+        FROM users
+        WHERE email ILIKE $1 OR name ILIKE $1
+    `
+	rows, err := m.DB.Query(stmt, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*User
+	for rows.Next() {
+		u := &User{}
+		err := rows.Scan(&u.ID, &u.Name, &u.Email)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
