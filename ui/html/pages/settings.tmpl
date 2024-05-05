@@ -1,0 +1,28 @@
+{{define "title"}}Settings{{end}}
+
+{{define "main"}}
+<div>
+  <h1>Settings</h1>
+  <div>
+    <h4>Integrations</h4>
+    <div>
+      {{if .Settings.LinkedMicrosoft}}
+      <a href="/settings/unlink-microsoft">Unlink Microsoft</a>
+      {{else}}
+      <a href="/settings/link-microsoft">Link Microsoft</a>
+      {{end}}
+    </div>
+    <div>
+      {{if .Settings.LinkedGoogle}}
+      <a href="/settings/unlink-google">Unlink Google</a>
+      {{else}}
+      <a href="/settings/link-google">Link Google</a>
+      {{end}}
+    </div>
+  </div>
+  <hr />
+  <div>
+    <h4>Working hours</h4>
+    #TODO
+  </div>
+  {{end}}
