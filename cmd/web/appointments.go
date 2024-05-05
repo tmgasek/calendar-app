@@ -49,26 +49,18 @@ func (app *application) deleteAppointment(w http.ResponseWriter, r *http.Request
 	}
 
 	for _, event := range appointmentEvents {
-		// Get the provider for the event.
-		// log out everything
-		fmt.Println("event.ProviderName: ", event.ProviderName)
-		fmt.Println("event.ProviderEventID: ", event.ProviderEventID)
-		fmt.Println("event.UserID: ", event.UserID)
-		fmt.Println("--------------")
-
 		provider, err := providers.GetProviderByName(event.UserID, event.ProviderName, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
 		if err != nil {
 			app.serverError(w, err)
 			return
 		}
 
-		token, err := app.models.AuthTokens.Token(event.UserID, event.ProviderName)
+		client, err := providers.GetClient(provider, event.UserID, &app.models)
 		if err != nil {
 			app.serverError(w, err)
 			return
 		}
 
-		client := provider.CreateClient(r.Context(), token)
 		err = provider.DeleteEvent(event.UserID, client, event.ProviderName, event.ProviderEventID)
 		if err != nil {
 			app.serverError(w, err)

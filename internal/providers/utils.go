@@ -1,6 +1,9 @@
 package providers
 
 import (
+	"context"
+	"net/http"
+
 	"github.com/tmgasek/calendar-app/internal/data"
 	"golang.org/x/oauth2"
 )
@@ -40,4 +43,13 @@ func GetProviderByName(userID int, name string, db *data.Models, googleConfig, m
 	default:
 		return nil, nil
 	}
+}
+
+func GetClient(provider CalendarProvider, userID int, db *data.Models) (*http.Client, error) {
+	token, err := db.AuthTokens.Token(userID, provider.Name())
+	if err != nil {
+		return nil, err
+	}
+	client := provider.CreateClient(context.Background(), token)
+	return client, nil
 }

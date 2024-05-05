@@ -170,23 +170,21 @@ func (app *application) updateAppointmentRequest(w http.ResponseWriter, r *http.
 
 	// Process appointments for both users.
 	for _, userID := range userIDs {
-		providers, err := providers.GetLinkedProviders(userID, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
+		linkedProviders, err := providers.GetLinkedProviders(userID, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
 		if err != nil {
 			app.serverError(w, err)
 			return
 		}
 
-		for _, provider := range providers {
-			app.infoLog.Printf("Creating event from provider %s for user %d\n", provider.Name(), userID)
+		for _, p := range linkedProviders {
+			app.infoLog.Printf("Creating event from provider %s for user %d\n", p.Name(), userID)
 
-			token, err := app.models.AuthTokens.Token(userID, provider.Name())
+			client, err := providers.GetClient(p, userID, &app.models)
 			if err != nil {
 				app.serverError(w, err)
 				return
 			}
-
-			client := provider.CreateClient(r.Context(), token)
-			eventID, err := provider.CreateEvent(userID, client, newEventData)
+			eventID, err := p.CreateEvent(userID, client, newEventData)
 			if err != nil {
 				app.errorLog.Fatalf("Error creating event: %v\n", err)
 				return
@@ -195,7 +193,7 @@ func (app *application) updateAppointmentRequest(w http.ResponseWriter, r *http.
 			appointmentEvent := &data.AppointmentEvent{
 				AppointmentID:   newAppointmentID,
 				UserID:          userID,
-				ProviderName:    provider.Name(),
+				ProviderName:    p.Name(),
 				ProviderEventID: eventID,
 			}
 			err = app.models.AppointmentEvents.Insert(appointmentEvent)
@@ -204,7 +202,7 @@ func (app *application) updateAppointmentRequest(w http.ResponseWriter, r *http.
 				return
 			}
 
-			app.infoLog.Printf("Provider: %s, Event ID: %s\n", provider.Name(), eventID)
+			app.infoLog.Printf("Provider: %s, Event ID: %s\n", p.Name(), eventID)
 		}
 	}
 

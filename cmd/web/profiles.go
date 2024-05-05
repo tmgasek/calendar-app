@@ -18,7 +18,7 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 	templateData := app.newTemplateData(r)
 	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
 
-	providers, err := providers.GetLinkedProviders(userID, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
+	linkedProviders, err := providers.GetLinkedProviders(userID, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -26,16 +26,16 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 
 	var allEvents []*data.Event
 
-	for _, provider := range providers {
-		app.infoLog.Printf("Getting events from provider %s for user %d\n", provider.Name(), userID)
-		token, err := app.models.AuthTokens.Token(userID, provider.Name())
+	for _, p := range linkedProviders {
+		app.infoLog.Printf("Getting events from provider %s for user %d\n", p.Name(), userID)
+
+		client, err := providers.GetClient(p, userID, &app.models)
 		if err != nil {
 			app.serverError(w, err)
 			return
 		}
 
-		client := provider.CreateClient(r.Context(), token)
-		events, err := provider.FetchEvents(userID, client)
+		events, err := p.FetchEvents(userID, client)
 		if err != nil {
 			app.serverError(w, err)
 			return
@@ -112,7 +112,7 @@ func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	providers, err := providers.GetLinkedProviders(int(targetUserID), &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
+	linkedProviders, err := providers.GetLinkedProviders(int(targetUserID), &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -120,16 +120,16 @@ func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) 
 
 	var allEvents []*data.Event
 
-	for _, provider := range providers {
-		app.infoLog.Printf("Getting events from provider %s for user %d\n", provider.Name(), int(targetUserID))
-		token, err := app.models.AuthTokens.Token(int(targetUserID), provider.Name())
+	for _, p := range linkedProviders {
+		app.infoLog.Printf("Getting events from provider %s for user %d\n", p.Name(), int(targetUserID))
+
+		client, err := providers.GetClient(p, int(targetUserID), &app.models)
 		if err != nil {
 			app.serverError(w, err)
 			return
 		}
 
-		client := provider.CreateClient(r.Context(), token)
-		events, err := provider.FetchEvents(int(targetUserID), client)
+		events, err := p.FetchEvents(int(targetUserID), client)
 		if err != nil {
 			app.serverError(w, err)
 			return
