@@ -73,3 +73,17 @@ func (m *AppointmentModel) GetByUserID(userID int) ([]*Appointment, error) {
 
 	return appointments, nil
 }
+
+func (m *AppointmentModel) Delete(id int) error {
+	query := `
+		DELETE FROM appointments
+		WHERE id = $1
+	`
+
+	_, err := m.DB.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
