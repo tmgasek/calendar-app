@@ -4,17 +4,12 @@
 <div class="container">
   <h1>Profile</h1>
 
-  <div class="calendar-links">
-    <a href="/oauth/google/link" class="btn btn-google">Link Google Calendar</a>
-    <a href="/oauth/microsoft/link" class="btn btn-microsoft">Link Outlook Calendar</a>
-  </div>
-
-  <div class="even-summary-list">
+  <div>
     <h2>Events</h2>
     <ul>
       {{range .Events}}
       <li>
-        <div class="event-summary">
+        <div>
           <h3>{{.Title}}</h3>
           <p>{{.Description}}</p>
           <p>{{.StartTime}} - {{.EndTime}}</p>
@@ -25,7 +20,7 @@
     </ul>
   </div>
 
-  <div class="availability-calendar">
+  <div>
     <table>
       <thead>
         <tr>
@@ -43,9 +38,9 @@
           {{$availability := index $day.Hours $hour}}
           <td class="{{$availability}}">
             {{if eq $availability "free"}}
-              <span class="availability-label">&#x2714;</span>
+              <span>&#x2714;</span>
             {{else}}
-              <span class="availability-label">&#x2716;</span>
+              <span>&#x2716;</span>
             {{end}}
           </td>
           {{end}}

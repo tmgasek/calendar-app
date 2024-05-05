@@ -22,6 +22,8 @@ type templateData struct {
 	Hours               [16]int
 	AppointmentRequests []*data.AppointmentRequest
 	Appointments        []*data.Appointment
+	User                *data.User
+	Settings            *data.Settings
 }
 
 func humanDate(t time.Time) string {

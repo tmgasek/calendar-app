@@ -3,12 +3,6 @@
 {{define "main"}}
 <div class="container">
   <h1>Requests</h1>
-
-  <div class="calendar-links">
-    <a href="/oauth/google/link" class="btn btn-google">Link Google Calendar</a>
-    <a href="/oauth/microsoft/link" class="btn btn-microsoft">Link Outlook Calendar</a>
-  </div>
-
   <div class="">
     <ul>
       {{range .AppointmentRequests}}
