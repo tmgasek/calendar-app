@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/tmgasek/calendar-app/internal/providers"
 	"github.com/tmgasek/calendar-app/internal/validator"
@@ -22,32 +21,19 @@ type appointmentCreateForm struct {
 }
 
 func (app *application) deleteAppointment(w http.ResponseWriter, r *http.Request) {
-	// Get the event ID from the URL parameters.
-	appointmentID := r.FormValue("appointment_id")
-	googleEventID := r.FormValue("google_event_id")
-	microsoftEventID := r.FormValue("microsoft_event_id")
+	appointmentID, err := app.readIDParam(r)
+	if err != nil {
+		app.clientError(w, http.StatusNotFound)
+		return
+	}
 
 	currUserID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
 
 	fmt.Println("appointmentID: ", appointmentID)
-	fmt.Println("googleEventID: ", googleEventID)
-	fmt.Println("microsoftEventID: ", microsoftEventID)
 	fmt.Println("userID: ", currUserID)
 
-	if appointmentID == "" {
-		app.clientError(w, http.StatusBadRequest)
-		return
-	}
-
-	// Convert appointmentID to int.
-	appointmentIDInt, err := strconv.Atoi(appointmentID)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
 	// Get the appointment from the database.
-	appointment, err := app.models.Appointments.Get(appointmentIDInt)
+	appointment, err := app.models.Appointments.Get(int(appointmentID))
 
 	// Check if userID is the creator or target of the appointment
 	if appointment.CreatorID != currUserID && appointment.TargetID != currUserID {
@@ -55,47 +41,50 @@ func (app *application) deleteAppointment(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Create slice of both user's IDs
-	userIDs := []int{appointment.CreatorID, appointment.TargetID}
+	// Delete from both users calendars.
+	appointmentEvents, err := app.models.AppointmentEvents.GetByAppointmentID(int(appointmentID))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 
-	for _, userID := range userIDs {
-		providers, err := providers.GetLinkedProviders(userID, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
+	for _, event := range appointmentEvents {
+		// Get the provider for the event.
+		// log out everything
+		fmt.Println("event.ProviderName: ", event.ProviderName)
+		fmt.Println("event.ProviderEventID: ", event.ProviderEventID)
+		fmt.Println("event.UserID: ", event.UserID)
+		fmt.Println("--------------")
+
+		provider, err := providers.GetProviderByName(event.UserID, event.ProviderName, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
 		if err != nil {
 			app.serverError(w, err)
 			return
 		}
 
-		for _, provider := range providers {
-			token, err := app.models.AuthTokens.Token(userID, provider.Name())
-			if err != nil {
-				app.serverError(w, err)
-				return
-			}
+		token, err := app.models.AuthTokens.Token(event.UserID, event.ProviderName)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
 
-			client := provider.CreateClient(r.Context(), token)
-
-			if provider.Name() == "google" {
-				err = provider.DeleteEvent(userID, client, provider.Name(), googleEventID)
-			} else if provider.Name() == "microsoft" {
-				err = provider.DeleteEvent(userID, client, provider.Name(), microsoftEventID)
-			}
-
-			if err != nil {
-				app.serverError(w, err)
-				return
-			}
+		client := provider.CreateClient(r.Context(), token)
+		err = provider.DeleteEvent(event.UserID, client, event.ProviderName, event.ProviderEventID)
+		if err != nil {
+			app.serverError(w, err)
+			return
 		}
 	}
 
 	// Delete the appointment from the database.
-	err = app.models.Appointments.Delete(appointmentIDInt)
+	err = app.models.Appointments.Delete(int(appointmentID))
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
 	// Redirect back to the profile page
-	http.Redirect(w, r, "/user/profile", http.StatusSeeOther)
+	http.Redirect(w, r, "/appointments", http.StatusSeeOther)
 }
 
 func (app *application) viewAppointments(w http.ResponseWriter, r *http.Request) {
