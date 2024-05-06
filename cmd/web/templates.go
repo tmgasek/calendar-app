@@ -38,15 +38,22 @@ func humanDate(t time.Time) string {
 	return t.UTC().Format("02 Jan 2006 at 15:04")
 }
 
-func addOne(i int) int {
-	return i + 1
+func formatEventTimes(start, end time.Time) string {
+	startTime := start.UTC().Format("02 Jan 2006 at 15:04")
+	if start.Format("02 Jan 2006") == end.Format("02 Jan 2006") {
+		// Same day, only show the end time hour
+		return startTime + " - " + end.UTC().Format("15:04")
+	} else {
+		// Different days, show full end time
+		return startTime + " - " + end.UTC().Format("02 Jan 2006 at 15:04")
+	}
 }
 
 // Init empty funcMap obj and store it in a global var. String keyed map acting
 // as a lookup between the names of custom template funcs and actual funcs.
 var functions = template.FuncMap{
-	"humanDate": humanDate,
-	"addOne":    addOne,
+	"humanDate":        humanDate,
+	"formatEventTimes": formatEventTimes,
 }
 
 // Only parse files once when app starts, then store the parsed templates in

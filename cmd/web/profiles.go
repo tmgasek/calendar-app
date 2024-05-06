@@ -59,7 +59,6 @@ func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) 
 	end := start.AddDate(0, 0, 14)
 	availability := app.initHourlyAvailability(start, end, allEvents)
 
-	templateData.Events = allEvents
 	templateData.HourlyAvailability = availability
 	templateData.Hours = [16]int{7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22}
 	templateData.TargetUserID = int(targetUserID)
