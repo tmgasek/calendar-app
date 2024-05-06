@@ -12,12 +12,13 @@ import (
 
 // include struct tags to tell the decoder how to map HTML form vals to
 // struct fields. "-" tells it to ignore a field!
-type appointmentCreateForm struct {
+type appointmentRequestCreateForm struct {
 	Title               string `form:"title"`
 	Description         string `form:"description"`
 	StartTime           string `form:"start_time"`
 	EndTime             string `form:"end_time"`
 	Location            string `form:"location"`
+	GroupID             int    `form:"group_id"`
 	validator.Validator `form:"-"`
 }
 
@@ -28,18 +29,12 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 	// Get the target user ID from the URL
 	targetUserID, err := app.readIDParam(r)
 
-	var form appointmentCreateForm
+	var form appointmentRequestCreateForm
 
 	err = app.decodePostForm(r, &form)
 	if err != nil {
 		app.errorLog.Println(err)
 		app.clientError(w, http.StatusBadRequest)
-		return
-	}
-
-	targetUser, err := app.models.Users.Get(int(targetUserID))
-	if err != nil {
-		app.serverError(w, err)
 		return
 	}
 
@@ -55,6 +50,21 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// Get the target user from the database.
+	targetUser, err := app.models.Users.Get(int(targetUserID))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Determine if dealing with a group or individual appointment.
+	var appointmentType string
+	if form.GroupID == 0 {
+		appointmentType = "individual"
+	} else {
+		appointmentType = "group"
+	}
+
 	requestee, err := app.models.Users.Get(userID)
 	if err != nil {
 		app.serverError(w, err)
@@ -63,31 +73,46 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 
 	type EmailData struct {
 		RequesteeName string
+		GroupName     string
 	}
 
 	// Create the appointment request.
 	appointmentRequest := &data.AppointmentRequest{
-		RequesterID:  int(userID),
-		TargetUserID: int(targetUserID),
-		Title:        form.Title,
-		Description:  form.Description,
-		StartTime:    startTime,
-		EndTime:      endTime,
-		Location:     form.Location,
-		Status:       "pending",
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		RequesterID:     int(userID),
+		TargetUserID:    int(targetUserID),
+		GroupID:         int(form.GroupID),
+		AppointmentType: appointmentType,
+		Title:           form.Title,
+		Description:     form.Description,
+		StartTime:       startTime,
+		EndTime:         endTime,
+		Location:        form.Location,
+		Status:          "pending",
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 
 	err = app.models.AppointmentRequests.Insert(appointmentRequest)
 	if err != nil {
-		app.errorLog.Println(err)
 		app.serverError(w, err)
 		return
 	}
 
 	emailData := EmailData{
 		RequesteeName: requestee.Name,
+	}
+
+	if appointmentType == "individual" {
+		//
+	} else if appointmentType == "group" {
+		//
+		// Get the group from the database.
+		group, err := app.models.Groups.Get(form.GroupID)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+		emailData.GroupName = group.Name
 	}
 
 	err = app.mailer.Send(targetUser.Email, "confirm-appointment.tmpl", emailData)
@@ -115,8 +140,8 @@ func (app *application) viewAppointmentRequests(w http.ResponseWriter, r *http.R
 }
 
 func (app *application) updateAppointmentRequest(w http.ResponseWriter, r *http.Request) {
-	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
-	fmt.Printf("userID: %v\n", userID)
+	currUserID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+	fmt.Printf("userID: %v\n", currUserID)
 
 	requestID, err := app.readIDParam(r)
 	fmt.Printf("requestID: %v\n", requestID)
@@ -164,13 +189,15 @@ func (app *application) updateAppointmentRequest(w http.ResponseWriter, r *http.
 	}
 
 	newAppointment := &data.Appointment{
-		CreatorID:   request.RequesterID,
-		TargetID:    request.TargetUserID,
-		Title:       request.Title,
-		Description: request.Description,
-		StartTime:   request.StartTime,
-		EndTime:     request.EndTime,
-		Location:    request.Location,
+		CreatorID:       request.RequesterID,
+		AppointmentType: request.AppointmentType,
+		GroupID:         request.GroupID,
+		TargetID:        request.TargetUserID,
+		Title:           request.Title,
+		Description:     request.Description,
+		StartTime:       request.StartTime,
+		EndTime:         request.EndTime,
+		Location:        request.Location,
 	}
 
 	// Save the appointment to the database
@@ -180,8 +207,31 @@ func (app *application) updateAppointmentRequest(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// Create a new slice of userIDs containing the IDs of both the requester and the target.
-	userIDs := []int{request.RequesterID, userID}
+	// Store all the user IDs that need to be processed.
+	var userIDs []int
+
+	if newAppointment.AppointmentType == "group" {
+		// Get all the users in the group.
+		groupMembers, err := app.models.Groups.Get(newAppointment.GroupID)
+		if err != nil {
+			app.serverError(w, err)
+			return
+		}
+		for _, member := range groupMembers.Members {
+			userIDs = append(userIDs, member.ID)
+		}
+		userIDs = append(userIDs, currUserID)
+
+	} else if newAppointment.AppointmentType == "individual" {
+		userIDs = []int{request.RequesterID, currUserID}
+
+	} else {
+		app.serverError(w, fmt.Errorf("invalid appointment type"))
+		return
+	}
+
+	// log out the userIDs
+	fmt.Printf("userIDs: %v\n", userIDs)
 
 	// Process appointments for both users.
 	for _, userID := range userIDs {

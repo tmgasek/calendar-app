@@ -6,20 +6,22 @@ import (
 )
 
 type Appointment struct {
-	ID          int
-	CreatorID   int
-	TargetID    int
-	Title       string
-	Description string
-	StartTime   time.Time
-	EndTime     time.Time
-	Location    string
-	Status      string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	TimeZone    string
-	Visibility  string
-	Recurrence  string
+	ID              int
+	CreatorID       int
+	TargetID        int
+	Title           string
+	Description     string
+	StartTime       time.Time
+	EndTime         time.Time
+	Location        string
+	Status          string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	TimeZone        string
+	Visibility      string
+	Recurrence      string
+	AppointmentType string
+	GroupID         int
 }
 
 type AppointmentModel struct {
@@ -29,12 +31,17 @@ type AppointmentModel struct {
 func (m *AppointmentModel) Insert(a *Appointment) (int, error) {
 	var id int64
 	query := `
-		INSERT INTO appointments (creator_id, target_id, title, description, start_time, end_time, location, status, created_at, updated_at, time_zone, visibility, recurrence)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		INSERT INTO appointments (creator_id, target_id, title, description, start_time, end_time, location, status, created_at, updated_at, time_zone, visibility, recurrence, appointment_type, group_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		RETURNING id
 	`
+	// We use a pointer here so that value can be null.
+	var groupID *int
+	if a.AppointmentType == "group" && a.GroupID != 0 {
+		groupID = &a.GroupID
+	}
 
-	err := m.DB.QueryRow(query, a.CreatorID, a.TargetID, a.Title, a.Description, a.StartTime, a.EndTime, a.Location, a.Status, a.CreatedAt, a.UpdatedAt, a.TimeZone, a.Visibility, a.Recurrence).Scan(&id)
+	err := m.DB.QueryRow(query, a.CreatorID, a.TargetID, a.Title, a.Description, a.StartTime, a.EndTime, a.Location, a.Status, a.CreatedAt, a.UpdatedAt, a.TimeZone, a.Visibility, a.Recurrence, a.AppointmentType, groupID).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
@@ -44,7 +51,7 @@ func (m *AppointmentModel) Insert(a *Appointment) (int, error) {
 
 func (m *AppointmentModel) GetForUser(userID int) ([]*Appointment, error) {
 	query := `
-		SELECT id, creator_id, target_id, title, description, start_time, end_time, location, status, created_at, updated_at, time_zone, visibility, recurrence
+		SELECT id, creator_id, target_id, title, description, start_time, end_time, location, status, created_at, updated_at, time_zone, visibility, recurrence, appointment_type, group_id
 		FROM appointments
 		WHERE creator_id = $1 OR target_id = $1
 	`
@@ -59,9 +66,15 @@ func (m *AppointmentModel) GetForUser(userID int) ([]*Appointment, error) {
 
 	for rows.Next() {
 		a := &Appointment{}
-		err := rows.Scan(&a.ID, &a.CreatorID, &a.TargetID, &a.Title, &a.Description, &a.StartTime, &a.EndTime, &a.Location, &a.Status, &a.CreatedAt, &a.UpdatedAt, &a.TimeZone, &a.Visibility, &a.Recurrence)
+		var groupID sql.NullInt64
+
+		err := rows.Scan(&a.ID, &a.CreatorID, &a.TargetID, &a.Title, &a.Description, &a.StartTime, &a.EndTime, &a.Location, &a.Status, &a.CreatedAt, &a.UpdatedAt, &a.TimeZone, &a.Visibility, &a.Recurrence, &a.AppointmentType, &groupID)
 		if err != nil {
 			return nil, err
+		}
+
+		if groupID.Valid {
+			a.GroupID = int(groupID.Int64)
 		}
 
 		appointments = append(appointments, a)
@@ -90,16 +103,21 @@ func (m *AppointmentModel) Delete(id int) error {
 
 func (m *AppointmentModel) Get(id int) (*Appointment, error) {
 	query := `
-		SELECT id, creator_id, target_id, title, description, start_time, end_time, location, status, created_at, updated_at, time_zone, visibility, recurrence
+		SELECT id, creator_id, target_id, title, description, start_time, end_time, location, status, created_at, updated_at, time_zone, visibility, recurrence, appointment_type, group_id
 		FROM appointments
 		WHERE id = $1
 	`
 
 	a := &Appointment{}
+	var groupID sql.NullInt64
 
-	err := m.DB.QueryRow(query, id).Scan(&a.ID, &a.CreatorID, &a.TargetID, &a.Title, &a.Description, &a.StartTime, &a.EndTime, &a.Location, &a.Status, &a.CreatedAt, &a.UpdatedAt, &a.TimeZone, &a.Visibility, &a.Recurrence)
+	err := m.DB.QueryRow(query, id).Scan(&a.ID, &a.CreatorID, &a.TargetID, &a.Title, &a.Description, &a.StartTime, &a.EndTime, &a.Location, &a.Status, &a.CreatedAt, &a.UpdatedAt, &a.TimeZone, &a.Visibility, &a.Recurrence, &a.AppointmentType, &groupID)
 	if err != nil {
 		return nil, err
+	}
+
+	if groupID.Valid {
+		a.GroupID = int(groupID.Int64)
 	}
 
 	return a, nil

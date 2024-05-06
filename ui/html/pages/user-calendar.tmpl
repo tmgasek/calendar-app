@@ -38,11 +38,22 @@
       </div>
       <div class="form-group">
         <label for="start_time">Start Time</label>
-        <input type="datetime-local" name="start_time" id="start_time" class="form-control" required value="2024-05-11T19:00">
+        <input type="datetime-local" name="start_time" id="start_time" class="form-control" required
+          value="2024-05-11T19:00">
       </div>
       <div class="form-group">
         <label for="end_time">End Time</label>
-        <input type="datetime-local" name="end_time" id="end_time" class="form-control" required value="2024-05-11T20:00">
+        <input type="datetime-local" name="end_time" id="end_time" class="form-control" required
+          value="2024-05-11T20:00">
+      </div>
+      <div class="form-group">
+        <label for="group_id">Group</label>
+        <select name="group_id" id="group_id" class="form-control">
+          <option value="">No Group</option>
+          {{range .Groups}}
+          <option value="{{.ID}}">{{.Name}}</option>
+          {{end}}
+        </select>
       </div>
       <button type="submit" class="btn btn-primary">Book</button>
     </form>
@@ -66,9 +77,9 @@
           {{$availability := index $day.Hours $hour}}
           <td class="{{$availability}}">
             {{if eq $availability "free"}}
-              <span class="availability-label">&#x2714;</span>
+            <span class="availability-label">&#x2714;</span>
             {{else}}
-              <span class="availability-label">&#x2716;</span>
+            <span class="availability-label">&#x2716;</span>
             {{end}}
           </td>
           {{end}}
