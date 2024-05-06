@@ -1,0 +1,28 @@
+{{define "title"}}Group - {{.Group.Name}}{{end}}
+
+{{define "main"}}
+<h1>{{.Group.Name}}</h1>
+
+<p>{{.Group.Description}}</p>
+
+<h2>Members</h2>
+{{if .Group.Members}}
+    <ul>
+        {{range .Group.Members}}
+            <li>{{.Name}} ({{.Email}})</li>
+        {{end}}
+    </ul>
+{{else}}
+    <p>No members in this group yet.</p>
+{{end}}
+
+<h2>Invite User</h2>
+<form action="/groups/invite/{{.Group.ID}}" method="post">
+    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}" />
+    <div>
+        <label for="email">User Email:</label>
+        <input type="email" id="email" name="email" required>
+    </div>
+    <button type="submit">Invite User</button>
+</form>
+{{end}}

@@ -1,0 +1,35 @@
+{{define "title"}}Groups{{end}}
+
+{{define "main"}}
+<h1>Groups</h1>
+
+<h3>Create Group</h3>
+<form action="/groups" method="post">
+  <input type="hidden" name="csrf_token" value="{{.CSRFToken}}" />
+  <div>
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" required>
+  </div>
+  <div>
+    <label for="description">Description:</label>
+    <textarea id="description" name="description"></textarea>
+  </div>
+  <button type="submit">Create Group</button>
+</form>
+
+<h3>Your groups</h3>
+{{if .Groups}}
+<ul>
+  {{range .Groups}}
+  <li><a href="/groups/view/{{.ID}}">{{.Name}}</a></li>
+  {{range .Members}}
+  <ul>
+    <li>{{.Name}}</li>
+  </ul>
+  {{end}}
+  {{end}}
+</ul>
+{{else}}
+<p>You don't belong to any groups yet.</p>
+{{end}}
+{{end}}
