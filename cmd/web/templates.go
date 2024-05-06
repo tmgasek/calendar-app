@@ -26,6 +26,8 @@ type templateData struct {
 	Users               []*data.User
 	Settings            *data.Settings
 	TargetUserID        int
+	Groups              []*data.Group
+	Group               *data.Group
 }
 
 func humanDate(t time.Time) string {

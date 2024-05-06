@@ -19,6 +19,7 @@ type Models struct {
 	AppointmentRequests AppointmentRequestModel
 	Events              EventModel
 	AppointmentEvents   AppointmentEventModel
+	Groups              GroupModel
 }
 
 // For ease of use
@@ -30,5 +31,6 @@ func NewModels(db *sql.DB) Models {
 		AppointmentRequests: AppointmentRequestModel{DB: db},
 		Events:              EventModel{DB: db},
 		AppointmentEvents:   AppointmentEventModel{DB: db},
+		Groups:              GroupModel{DB: db},
 	}
 }

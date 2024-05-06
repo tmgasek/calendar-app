@@ -141,3 +141,20 @@ func (m *UserModel) SearchUsers(query string) ([]*User, error) {
 
 	return users, nil
 }
+
+// Get user by email.
+func (m *UserModel) GetByEmail(email string) (*User, error) {
+	user := &User{}
+
+	query := "SELECT id, name, email, created_at FROM users WHERE email = $1"
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, email).Scan(&user.ID, &user.Name, &user.Email, &user.Created)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}

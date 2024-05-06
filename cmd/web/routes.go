@@ -60,6 +60,12 @@ func (app *application) routes() http.Handler {
 	// Settings
 	router.Handler(http.MethodGet, "/settings", protected.ThenFunc(app.viewSettings))
 
+	// Groups
+	router.Handler(http.MethodGet, "/groups", protected.ThenFunc(app.viewGroupsPage))
+	router.Handler(http.MethodGet, "/groups/view/:id", protected.ThenFunc(app.viewOneGroupPage))
+	router.Handler(http.MethodPost, "/groups", protected.ThenFunc(app.createGroup))
+	router.Handler(http.MethodPost, "/groups/invite/:id", protected.ThenFunc(app.inviteUserToGroup))
+
 	// Create a new middleware chain.
 	standard := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
 
