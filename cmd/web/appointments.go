@@ -10,7 +10,7 @@ import (
 func (app *application) deleteAppointment(w http.ResponseWriter, r *http.Request) {
 	appointmentID, err := app.readIDParam(r)
 	if err != nil {
-		app.clientError(w, http.StatusNotFound)
+		app.clientError(w, http.StatusNotFound, "Invalid appointment ID in URL")
 		return
 	}
 
@@ -24,7 +24,7 @@ func (app *application) deleteAppointment(w http.ResponseWriter, r *http.Request
 
 	// Check if userID is the creator or target of the appointment
 	if appointment.CreatorID != currUserID && appointment.TargetID != currUserID {
-		app.clientError(w, http.StatusForbidden)
+		app.clientError(w, http.StatusForbidden, "You do not have permission to delete this appointment.")
 		return
 	}
 

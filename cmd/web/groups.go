@@ -37,7 +37,7 @@ func (app *application) viewOneGroupPage(w http.ResponseWriter, r *http.Request)
 
 	groupID, err := app.readIDParam(r)
 	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
+		app.clientError(w, http.StatusBadRequest, "Invalid group ID in URL")
 		return
 	}
 
@@ -58,12 +58,12 @@ func (app *application) viewOneGroupPage(w http.ResponseWriter, r *http.Request)
 	}
 
 	if !isMember {
-		app.clientError(w, http.StatusForbidden)
+		app.clientError(w, http.StatusForbidden, "You are not a member of this group")
 		return
 	}
 
 	if group == nil {
-		app.notFound(w)
+		app.clientError(w, http.StatusNotFound, "Group not found")
 		return
 	}
 
@@ -86,7 +86,7 @@ func (app *application) createGroup(w http.ResponseWriter, r *http.Request) {
 
 	err := app.decodePostForm(r, &form)
 	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
+		app.clientError(w, http.StatusBadRequest, "Invalid form data")
 		return
 	}
 
@@ -109,14 +109,14 @@ func (app *application) inviteUserToGroup(w http.ResponseWriter, r *http.Request
 	currUserID := app.sessionManager.Get(r.Context(), "authenticatedUserID").(int)
 	groupID, err := app.readIDParam(r)
 	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
+		app.clientError(w, http.StatusBadRequest, "Invalid group ID in URL")
 		return
 	}
 
 	var form inviteUserForm
 	err = app.decodePostForm(r, &form)
 	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
+		app.clientError(w, http.StatusBadRequest, "Invalid form data")
 		return
 	}
 
@@ -131,7 +131,7 @@ func (app *application) inviteUserToGroup(w http.ResponseWriter, r *http.Request
 		}
 	}
 	if !isMember {
-		app.clientError(w, http.StatusForbidden)
+		app.clientError(w, http.StatusForbidden, "You are not a member of this group, can't invite!")
 		return
 	}
 

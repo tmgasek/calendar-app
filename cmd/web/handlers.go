@@ -51,7 +51,7 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 
 	err := app.decodePostForm(r, &form)
 	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
+		app.clientError(w, http.StatusBadRequest, "There was a problem with the submitted form. Please try again.")
 		return
 	}
 
@@ -117,7 +117,7 @@ func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
 
 	err := app.decodePostForm(r, &form)
 	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
+		app.clientError(w, http.StatusBadRequest, "There was a problem with the submitted form. Please try again.")
 		return
 	}
 

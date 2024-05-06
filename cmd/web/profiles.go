@@ -40,7 +40,7 @@ func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) 
 	currUserID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
 	targetUserID, err := app.readIDParam(r)
 	if err != nil {
-		app.notFound(w)
+		app.clientError(w, http.StatusBadRequest, "Invalid user ID in URL")
 		return
 	}
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
-	"time"
 
 	"github.com/go-playground/form/v4"
 	"github.com/justinas/nosurf"
@@ -15,7 +14,6 @@ import (
 // returns pointer to templateData struct inited with curr year.
 func (app *application) newTemplateData(r *http.Request) *templateData {
 	return &templateData{
-		CurrentYear:     time.Now().Year(),
 		IsAuthenticated: app.isAuthenticated(r),
 		Flash:           app.sessionManager.PopString(r.Context(), "flash"),
 		CSRFToken:       nosurf.Token(r),
@@ -70,14 +68,27 @@ func (app *application) serverError(w http.ResponseWriter, err error) {
 }
 
 // send specific status code and corresponding description to user
-func (app *application) clientError(w http.ResponseWriter, status int) {
-	http.Error(w, http.StatusText(status), status)
+// func (app *application) clientError(w http.ResponseWriter, status int) {
+// 	http.Error(w, http.StatusText(status), status)
+// }
+
+type ErrorData struct {
+	Status  int
+	Message string
+}
+
+func (app *application) clientError(w http.ResponseWriter, status int, message string) {
+	data := &ErrorData{
+		Status:  status,
+		Message: message,
+	}
+	app.render(w, status, "error.tmpl", &templateData{ErrorData: data})
 }
 
 // convenient wrapper around clientError, sends 404 res to user
-func (app *application) notFound(w http.ResponseWriter) {
-	app.clientError(w, http.StatusNotFound)
-}
+// func (app *application) notFound(w http.ResponseWriter) {
+// 	app.clientError(w, http.StatusNotFound)
+// }
 
 // DST is target destination that we want to decode the form data into.
 func (app *application) decodePostForm(r *http.Request, dst any) error {

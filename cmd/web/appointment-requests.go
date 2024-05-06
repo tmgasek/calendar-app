@@ -32,7 +32,6 @@ func isUserAvailable(events []*data.Event, startTime, endTime time.Time) bool {
 }
 
 func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("createAppointment")
 	// Get the authenticated user ID
 	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
 	// Get the target user ID from the URL
@@ -42,8 +41,7 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 
 	err = app.decodePostForm(r, &form)
 	if err != nil {
-		app.errorLog.Println(err)
-		app.clientError(w, http.StatusBadRequest)
+		app.clientError(w, http.StatusBadRequest, "Invalid form data")
 		return
 	}
 
@@ -117,7 +115,7 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 			}
 
 			if !isUserAvailable(events, startTime, endTime) {
-				app.clientError(w, http.StatusConflict)
+				app.clientError(w, http.StatusConflict, "One or more users are not available at the requested time")
 				return
 			}
 		}
@@ -147,7 +145,7 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 			}
 
 			if !isUserAvailable(events, startTime, endTime) {
-				app.clientError(w, http.StatusConflict)
+				app.clientError(w, http.StatusConflict, "One or more users are not available at the requested time")
 				return
 			}
 		}
@@ -190,14 +188,13 @@ func (app *application) updateAppointmentRequest(w http.ResponseWriter, r *http.
 	requestID, err := app.readIDParam(r)
 	fmt.Printf("requestID: %v\n", requestID)
 	if err != nil {
-		app.errorLog.Println(err)
-		app.clientError(w, http.StatusBadRequest)
+		app.clientError(w, http.StatusBadRequest, "Invalid request ID in URL")
 		return
 	}
 
 	action := r.FormValue("action")
 	if action != "confirmed" && action != "declined" {
-		app.clientError(w, http.StatusBadRequest)
+		app.clientError(w, http.StatusBadRequest, "Invalid action")
 		return
 	}
 

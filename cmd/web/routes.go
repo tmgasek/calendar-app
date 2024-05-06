@@ -13,7 +13,7 @@ func (app *application) routes() http.Handler {
 
 	// create wrapper around our NotFound() helper.
 	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		app.notFound(w)
+		app.clientError(w, http.StatusNotFound, "Page not found")
 	})
 
 	fileServer := http.FileServer(http.FS(ui.Files))

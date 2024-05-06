@@ -22,7 +22,7 @@ func (app *application) viewSettings(w http.ResponseWriter, r *http.Request) {
 
 	// If the user record doesn't exist, return a 404 Not Found response.
 	if user == nil {
-		app.notFound(w)
+		app.clientError(w, http.StatusNotFound, "User not found")
 		return
 	}
 

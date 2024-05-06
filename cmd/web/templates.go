@@ -11,7 +11,6 @@ import (
 )
 
 type templateData struct {
-	CurrentYear         int
 	Form                any
 	Flash               string
 	IsAuthenticated     bool
@@ -28,6 +27,7 @@ type templateData struct {
 	TargetUserID        int
 	Groups              []*data.Group
 	Group               *data.Group
+	ErrorData           *ErrorData
 }
 
 func humanDate(t time.Time) string {
