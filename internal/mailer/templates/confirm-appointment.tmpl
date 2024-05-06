@@ -6,14 +6,20 @@ Do you accept??
 {{define "htmlBody"}}
 <!doctype html>
 <html>
+
 <head>
-<meta name="viewport" content="width=device-width" />
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 </head>
+
 <body>
-<p>Hi,</p>
-<p> You have received appointment request from user {{.RequesteeName}} </p>
-<p>Thanks,</p>
+    <p>Hi,</p>
+    <p> You have received appointment request from user {{.RequesteeName}} </p>
+    {{if .GroupName}}
+    <p>Group: {{.GroupName}}</p>
+    {{end}}
+    <p>Thanks,</p>
 </body>
+
 </html>
 {{end}}

@@ -103,12 +103,18 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) {
 	templateData := app.newTemplateData(r)
 
-	userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
-	fmt.Printf("userID: %v\n", userID)
+	currUserID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+	fmt.Printf("userID: %v\n", currUserID)
 
 	targetUserID, err := app.readIDParam(r)
 	if err != nil {
 		app.notFound(w)
+		return
+	}
+
+	// Handle user viewing their own profile
+	if currUserID == int(targetUserID) {
+		http.Redirect(w, r, "/user/profile", http.StatusSeeOther)
 		return
 	}
 
@@ -141,6 +147,15 @@ func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) 
 			allEvents = append(allEvents, &eventCopy)
 		}
 	}
+
+	// Get the groups for the current user.
+	groups, err := app.models.Groups.GetAllForUser(currUserID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	templateData.Groups = groups
 
 	// Determine the range of dates to display. For now show 14 days from today.
 	start := time.Now()

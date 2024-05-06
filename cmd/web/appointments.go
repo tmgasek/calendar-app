@@ -28,7 +28,7 @@ func (app *application) deleteAppointment(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Delete from both users calendars.
+	// Delete from all users calendars.
 	appointmentEvents, err := app.models.AppointmentEvents.GetByAppointmentID(int(appointmentID))
 	if err != nil {
 		app.serverError(w, err)
