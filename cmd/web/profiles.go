@@ -63,6 +63,15 @@ func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) 
 	templateData.Hours = [16]int{7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22}
 	templateData.TargetUserID = int(targetUserID)
 
+	// Get the groups for the current user.
+	groups, err := app.models.Groups.GetAllForUser(currUserID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	templateData.Groups = groups
+
 	app.render(w, http.StatusOK, "user-calendar.tmpl", templateData)
 }
 

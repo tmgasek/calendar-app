@@ -22,6 +22,15 @@ type appointmentRequestCreateForm struct {
 	validator.Validator `form:"-"`
 }
 
+func isUserAvailable(events []*data.Event, startTime, endTime time.Time) bool {
+	for _, event := range events {
+		if event.StartTime.Before(endTime) && event.EndTime.After(startTime) {
+			return false
+		}
+	}
+	return true
+}
+
 func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("createAppointment")
 	// Get the authenticated user ID
@@ -92,20 +101,29 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 		UpdatedAt:       time.Now(),
 	}
 
-	err = app.models.AppointmentRequests.Insert(appointmentRequest)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
 	emailData := EmailData{
 		RequesteeName: requestee.Name,
 	}
 
+	// Check if all the involved users are available at the requested time.
 	if appointmentType == "individual" {
-		//
+		userIds := []int{userID, int(targetUserID)}
+		// Get all the events for the users
+		for _, userID := range userIds {
+			events, err := app.fetchEventsForUser(userID)
+			if err != nil {
+				app.serverError(w, err)
+				return
+			}
+
+			if !isUserAvailable(events, startTime, endTime) {
+				app.clientError(w, http.StatusConflict)
+				return
+			}
+		}
+
+		//////////////////
 	} else if appointmentType == "group" {
-		//
 		// Get the group from the database.
 		group, err := app.models.Groups.Get(form.GroupID)
 		if err != nil {
@@ -113,6 +131,32 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 			return
 		}
 		emailData.GroupName = group.Name
+
+		// Get all users in the group.
+		userIds := []int{int(targetUserID)}
+		for _, member := range group.Members {
+			userIds = append(userIds, member.ID)
+		}
+
+		// Check if everyone is available.
+		for _, userID := range userIds {
+			events, err := app.fetchEventsForUser(userID)
+			if err != nil {
+				app.serverError(w, err)
+				return
+			}
+
+			if !isUserAvailable(events, startTime, endTime) {
+				app.clientError(w, http.StatusConflict)
+				return
+			}
+		}
+	}
+
+	err = app.models.AppointmentRequests.Insert(appointmentRequest)
+	if err != nil {
+		app.serverError(w, err)
+		return
 	}
 
 	err = app.mailer.Send(targetUser.Email, "confirm-appointment.tmpl", emailData)
