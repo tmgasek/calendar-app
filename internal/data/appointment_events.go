@@ -16,6 +16,11 @@ type AppointmentEventModel struct {
 	DB *sql.DB
 }
 
+type AppointmentEventModelInterface interface {
+	Insert(event *AppointmentEvent) error
+	GetByAppointmentID(appointmentID int) ([]*AppointmentEvent, error)
+}
+
 func (m *AppointmentEventModel) Insert(event *AppointmentEvent) error {
 	query := `
 		INSERT INTO appointment_events (appointment_id, user_id, provider_name, provider_event_id)

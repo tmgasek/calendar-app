@@ -14,6 +14,15 @@ type UserModel struct {
 	DB *sql.DB
 }
 
+type UserModelInterface interface {
+	Insert(name, email, password string) error
+	Authenticate(email, password string) (int, error)
+	Exists(id int) (bool, error)
+	Get(id int) (*User, error)
+	SearchUsers(query string) ([]*User, error)
+	GetByEmail(email string) (*User, error)
+}
+
 type User struct {
 	ID           int
 	Name         string

@@ -23,6 +23,11 @@ type AuthToken struct {
 	AuthProvider string
 }
 
+type AuthTokenModelInterface interface {
+	SaveToken(userID int, authProvider string, token *oauth2.Token) error
+	Token(userID int, authProvider string) (*oauth2.Token, error)
+}
+
 func (m *AuthTokenModel) SaveToken(userID int, authProvider string, token *oauth2.Token) error {
 	query := `
         INSERT INTO auth_tokens (
