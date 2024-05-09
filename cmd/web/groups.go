@@ -43,7 +43,8 @@ func (app *application) viewOneGroupPage(w http.ResponseWriter, r *http.Request)
 
 	group, err := app.models.Groups.Get(int(groupID))
 	if err != nil {
-		app.serverError(w, err)
+		// app.serverError(w, err)
+		app.clientError(w, http.StatusNotFound, "Group not found")
 		return
 	}
 

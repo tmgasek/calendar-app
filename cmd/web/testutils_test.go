@@ -75,7 +75,7 @@ func newTestApplication(t *testing.T) *application {
 	sessionManager.Lifetime = 12 * time.Hour
 	sessionManager.Cookie.Secure = true
 
-	return &application{
+	app := &application{
 		errorLog:       log.New(io.Discard, "", 0),
 		infoLog:        log.New(io.Discard, "", 0),
 		templateCache:  templateCache,
@@ -83,4 +83,13 @@ func newTestApplication(t *testing.T) *application {
 		formDecoder:    form.NewDecoder(),
 		sessionManager: sessionManager,
 	}
+
+	return app
+}
+
+func (app *application) mockAuthentication(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		app.sessionManager.Put(r.Context(), "authenticatedUserID", 1)
+		next.ServeHTTP(w, r)
+	})
 }
