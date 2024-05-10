@@ -28,3 +28,30 @@ func TestUnauthedUserProfile(t *testing.T) {
 
 	assert.Equal(t, code, http.StatusSeeOther)
 }
+
+func TestViewOtherUserProfile(t *testing.T) {
+	app := newTestApplication(t)
+	ts := newTestServer(t, app.sessionManager.LoadAndSave(app.mockAuthentication(app.routes())))
+	defer ts.Close()
+
+	code, _, _ := ts.get(t, "/users/profile/2")
+	assert.Equal(t, code, http.StatusOK)
+}
+
+func TestViewInvalidUserProfile(t *testing.T) {
+	app := newTestApplication(t)
+	ts := newTestServer(t, app.sessionManager.LoadAndSave(app.mockAuthentication(app.routes())))
+	defer ts.Close()
+
+	code, _, _ := ts.get(t, "/users/profile/invalid")
+	assert.Equal(t, code, http.StatusBadRequest)
+}
+
+func TestRedirectToOwnProfile(t *testing.T) {
+	app := newTestApplication(t)
+	ts := newTestServer(t, app.sessionManager.LoadAndSave(app.mockAuthentication(app.routes())))
+	defer ts.Close()
+
+	code, _, _ := ts.get(t, "/users/profile/1")
+	assert.Equal(t, code, http.StatusSeeOther)
+}
