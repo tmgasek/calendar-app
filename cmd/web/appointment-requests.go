@@ -45,6 +45,17 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// Validate the form.
+	form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
+	form.CheckField(validator.NotBlank(form.Description), "description", "This field cannot be blank")
+	form.CheckField(validator.NotBlank(form.StartTime), "start_time", "This field cannot be blank")
+	form.CheckField(validator.NotBlank(form.EndTime), "end_time", "This field cannot be blank")
+
+	if !form.Valid() {
+		app.clientError(w, http.StatusUnprocessableEntity, "Invalid form data")
+		return
+	}
+
 	// Parse the start and end times
 	startTime, err := time.Parse("2006-01-02T15:04", form.StartTime)
 	if err != nil {

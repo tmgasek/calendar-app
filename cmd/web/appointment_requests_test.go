@@ -73,9 +73,40 @@ func TestCreateAppointmentRequest(t *testing.T) {
 			groupID:     0,
 			csrfToken:   validCSRFToken,
 			wantCode:    http.StatusUnprocessableEntity,
-			wantFormTag: formTag,
 		},
-		// Add more test cases as needed
+		{
+			name:        "Empty description",
+			title:       validTitle,
+			description: "",
+			startTime:   validStartTime,
+			endTime:     validEndTime,
+			location:    validLocation,
+			groupID:     0,
+			csrfToken:   validCSRFToken,
+			wantCode:    http.StatusUnprocessableEntity,
+		},
+		{
+			name:        "Empty start time",
+			title:       validTitle,
+			description: validDescription,
+			startTime:   "",
+			endTime:     validEndTime,
+			location:    validLocation,
+			groupID:     0,
+			csrfToken:   validCSRFToken,
+			wantCode:    http.StatusUnprocessableEntity,
+		},
+		{
+			name:        "Empty end time",
+			title:       validTitle,
+			description: validDescription,
+			startTime:   validStartTime,
+			endTime:     "",
+			location:    validLocation,
+			groupID:     0,
+			csrfToken:   validCSRFToken,
+			wantCode:    http.StatusUnprocessableEntity,
+		},
 	}
 
 	for _, tt := range tests {
