@@ -26,7 +26,7 @@ func TestUserModelExists(t *testing.T) {
 		},
 		{
 			name:   "Non-existent ID",
-			userID: 2,
+			userID: 999,
 			want:   false,
 		},
 	}
@@ -145,7 +145,7 @@ func TestUserModelGet(t *testing.T) {
 		},
 		{
 			name:    "Non-existent ID",
-			userID:  2,
+			userID:  999,
 			want:    nil,
 			wantErr: sql.ErrNoRows,
 		},

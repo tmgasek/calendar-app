@@ -2,7 +2,6 @@ package data
 
 import (
 	"database/sql"
-	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -20,7 +19,6 @@ func newTestDB(t *testing.T) *sql.DB {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println("Connected to test database")
 	cmd := exec.Command("migrate", "-path", "../../migrations", "-database", testDSN, "up")
 	// cmd.Stdout = os.Stdout
 	// cmd.Stderr = os.Stderr

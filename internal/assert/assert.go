@@ -32,3 +32,19 @@ func NilError(t *testing.T, actual error) {
 		t.Errorf("got: %v; expected: nil", actual)
 	}
 }
+
+func Greater(t *testing.T, actual, expected int) {
+	t.Helper()
+
+	if actual <= expected {
+		t.Errorf("got: %d; expected: greater than %d", actual, expected)
+	}
+}
+
+func NotNil(t *testing.T, actual interface{}) {
+	t.Helper()
+
+	if actual == nil {
+		t.Errorf("got: nil; expected: not nil")
+	}
+}
