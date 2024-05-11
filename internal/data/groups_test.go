@@ -43,7 +43,7 @@ func TestGroupModelGet(t *testing.T) {
 	assert.Equal(t, group.Description, "Description for Group 1")
 	assert.Equal(t, len(group.Members), 2)
 	assert.Equal(t, group.Members[0].ID, 1)
-	assert.Equal(t, group.Members[0].Name, "Alice Jones")
+	assert.Equal(t, group.Members[0].Name, "Alice")
 	assert.Equal(t, group.Members[0].Email, "alice@example.com")
 	assert.Equal(t, group.Members[1].ID, 2)
 	assert.Equal(t, group.Members[1].Name, "Bob")

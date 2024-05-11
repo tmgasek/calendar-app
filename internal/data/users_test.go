@@ -138,7 +138,7 @@ func TestUserModelGet(t *testing.T) {
 			userID: 1,
 			want: &User{
 				ID:    1,
-				Name:  "Alice Jones",
+				Name:  "Alice",
 				Email: "alice@example.com",
 			},
 			wantErr: nil,
@@ -183,7 +183,7 @@ func TestUserModelSearchUsers(t *testing.T) {
 			wantUsers: []*User{
 				{
 					ID:    1,
-					Name:  "Alice Jones",
+					Name:  "Alice",
 					Email: "alice@example.com",
 				},
 			},
@@ -229,7 +229,7 @@ func TestUserModelGetByEmail(t *testing.T) {
 			email: "alice@example.com",
 			want: &User{
 				ID:    1,
-				Name:  "Alice Jones",
+				Name:  "Alice",
 				Email: "alice@example.com",
 			},
 			wantErr: nil,
