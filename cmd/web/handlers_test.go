@@ -21,8 +21,6 @@ func TestPing(t *testing.T) {
 }
 
 func TestUserSignup(t *testing.T) {
-	db := newTestDB(t)
-	defer db.Close()
 	app := newTestApplication(t)
 	ts := newTestServer(t, app.routes())
 	defer ts.Close()

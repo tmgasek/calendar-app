@@ -10,9 +10,6 @@ import (
 )
 
 func TestCreateAppointmentRequest(t *testing.T) {
-	db := newTestDB(t)
-	defer db.Close()
-
 	app := newTestApplication(t)
 	ts := newTestServer(t, app.sessionManager.LoadAndSave(app.mockAuthentication(app.routes())))
 	defer ts.Close()
