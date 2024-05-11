@@ -30,11 +30,17 @@ INSERT INTO appointment_requests (request_id, requester_id, target_user_id, titl
 (1, 1, 2, 'Request 1', 'Description 1', '2023-06-01 12:00:00', '2023-06-01 13:00:00', 'Location 1', 'pending', '2023-06-01 10:00:00', '2023-06-01 10:00:00', 'UTC'),
 (2, 1, 2, 'Request 2', 'Description 2', '2023-06-02 14:00:00', '2023-06-02 15:00:00', 'Location 2', 'accepted', '2023-06-02 10:00:00', '2023-06-02 10:00:00', 'UTC');
 
+-- Seed data for appointment_events
+INSERT INTO appointment_events (id, appointment_id, user_id, provider_name, provider_event_id) VALUES
+(1, 1, 1, 'google', 'event_1'),
+(2, 1, 2, 'outlook', 'event_2');
+
 -- Adjust the sequences for all my tables
 SELECT setval('users_id_seq', (SELECT MAX(id) FROM users) + 1);
 SELECT setval('groups_id_seq', (SELECT MAX(id) FROM groups) + 1);
 SELECT setval('user_groups_id_seq', (SELECT MAX(id) FROM user_groups) + 1);
 SELECT setval('appointments_id_seq', (SELECT MAX(id) FROM appointments) + 1);
 SELECT setval('appointment_requests_request_id_seq', (SELECT MAX(request_id) FROM appointment_requests) + 1);
+SELECT setval('appointment_events_id_seq', (SELECT MAX(id) FROM appointment_events) + 1);
 
 
