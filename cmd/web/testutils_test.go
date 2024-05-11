@@ -2,11 +2,18 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
+	"fmt"
+	"html"
 	"io"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"net/url"
+	// "os"
+	"os/exec"
+	"regexp"
 	"testing"
 	"time"
 
@@ -15,30 +22,54 @@ import (
 	"github.com/tmgasek/calendar-app/internal/data/mocks"
 )
 
-// Define a custom testServer type which embeds a httptest.Server instance.
+var csrfTokenRX = regexp.MustCompile(`<input type="hidden" name="csrf_token" value="(.+)" />`)
+
+func extractCSRFToken(t *testing.T, body string) string {
+	matches := csrfTokenRX.FindStringSubmatch(body)
+	if len(matches) < 2 {
+		t.Fatal("no csrf token found in body")
+	}
+
+	return html.UnescapeString(string(matches[1]))
+}
+
+func newTestApplication(t *testing.T) *application {
+	templateCache, err := newTemplateCache()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	formDecoder := form.NewDecoder()
+
+	sessionManager := scs.New()
+	sessionManager.Lifetime = 12 * time.Hour
+	sessionManager.Cookie.Secure = true
+
+	return &application{
+		errorLog:       log.New(io.Discard, "", 0),
+		infoLog:        log.New(io.Discard, "", 0),
+		models:         mocks.NewMockModels(),
+		templateCache:  templateCache,
+		formDecoder:    formDecoder,
+		sessionManager: sessionManager,
+		mailer:         mocks.NewMockMailer(),
+	}
+}
+
 type testServer struct {
 	*httptest.Server
 }
 
-// Create a newTestServer helper which initalizes and returns a new instance
-// of our custom testServer type.
 func newTestServer(t *testing.T, h http.Handler) *testServer {
-	ts := httptest.NewServer(h)
+	ts := httptest.NewTLSServer(h)
 
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Add the cookiejar to the client, so that cookies are stored and sent in
-	// subsequent requests.
 	ts.Client().Jar = jar
 
-	// Disable redirect-following for the test server client by setting a custom
-	// CheckRedirect function. This function will be called whenever a 3xx
-	// response is received by the client, and by always returning a
-	// http.ErrUseLastResponse error it forces the client to immediately return
-	// the received response.
 	ts.Client().CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
 	}
@@ -46,45 +77,36 @@ func newTestServer(t *testing.T, h http.Handler) *testServer {
 	return &testServer{ts}
 }
 
-// Implement a get() method on our custom testServer type. This makes a GET
-// request to a given url path using the test server client, and returns the
-// response status code, headers and body.
 func (ts *testServer) get(t *testing.T, urlPath string) (int, http.Header, string) {
 	rs, err := ts.Client().Get(ts.URL + urlPath)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer rs.Body.Close()
 	body, err := io.ReadAll(rs.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
 	bytes.TrimSpace(body)
+
 	return rs.StatusCode, rs.Header, string(body)
 }
 
-// Create a newTestApplication helper which returns an instance of our
-// application struct containing mocked dependencies.
-func newTestApplication(t *testing.T) *application {
-	templateCache, err := newTemplateCache()
+func (ts *testServer) postForm(t *testing.T, urlPath string, form url.Values) (int, http.Header, string) {
+	rs, err := ts.Client().PostForm(ts.URL+urlPath, form)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	sessionManager := scs.New()
-	sessionManager.Lifetime = 12 * time.Hour
-	sessionManager.Cookie.Secure = true
-
-	app := &application{
-		errorLog:       log.New(io.Discard, "", 0),
-		infoLog:        log.New(io.Discard, "", 0),
-		templateCache:  templateCache,
-		models:         mocks.NewMockModels(),
-		formDecoder:    form.NewDecoder(),
-		sessionManager: sessionManager,
+	defer rs.Body.Close()
+	body, err := io.ReadAll(rs.Body)
+	if err != nil {
+		t.Fatal(err)
 	}
+	bytes.TrimSpace(body)
 
-	return app
+	return rs.StatusCode, rs.Header, string(body)
 }
 
 func (app *application) mockAuthentication(next http.Handler) http.Handler {
@@ -92,4 +114,46 @@ func (app *application) mockAuthentication(next http.Handler) http.Handler {
 		app.sessionManager.Put(r.Context(), "authenticatedUserID", 1)
 		next.ServeHTTP(w, r)
 	})
+}
+
+func newTestDB(t *testing.T) *sql.DB {
+	// Establish a sql.DB connection pool for our test database. Because our
+	// setup and teardown scripts contains multiple SQL statements, we need
+	// to use the "multiStatements=true" parameter in our DSN. This instructs
+	// our MySQL database driver to support executing multiple SQL statements
+	// in one db.Exec() call.
+	testDSN := "postgres://test_calendar_app:password@localhost/test_calendar_app?sslmode=disable"
+
+	db, err := sql.Open("postgres", testDSN)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("Connected to test database")
+	cmd := exec.Command("migrate", "-path", "../../migrations", "-database", testDSN, "up")
+	// cmd.Stdout = os.Stdout
+	// cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Use the t.Cleanup() to register a function *which will automatically be
+	// called by Go when the current test (or sub-test) which calls newTestDB()
+	// has finished*.
+	t.Cleanup(func() {
+		// Run the "down" migration to remove the test database schema.
+		cmd := exec.Command("migrate", "-path", "../../migrations", "-database", testDSN, "down", "-all")
+		// cmd.Stdout = os.Stdout
+		// cmd.Stderr = os.Stderr
+
+		err := cmd.Run()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		db.Close()
+	})
+	// Return the database connection pool.
+	return db
 }

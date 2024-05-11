@@ -57,13 +57,6 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// Get the target user from the database.
-	targetUser, err := app.models.Users.Get(int(targetUserID))
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
 	// Determine if dealing with a group or individual appointment.
 	var appointmentType string
 	if form.GroupID == 0 {
@@ -157,6 +150,13 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// Get the target user from the database.
+	targetUser, err := app.models.Users.Get(int(targetUserID))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	// Send an email to the target user.
 	err = app.mailer.Send(targetUser.Email, "confirm-appointment.tmpl", emailData)
 	if err != nil {
 		app.serverError(w, err)

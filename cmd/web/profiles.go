@@ -76,6 +76,7 @@ func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *application) fetchEventsForUser(userID int) ([]*data.Event, error) {
+	return []*data.Event{}, nil
 	var allEvents []*data.Event
 	linkedProviders, err := providers.GetLinkedProviders(userID, &app.models, app.googleOAuthConfig, app.azureOAuth2Config)
 	if err != nil {

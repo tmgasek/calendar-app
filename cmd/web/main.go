@@ -54,7 +54,7 @@ type application struct {
 	sessionManager    *scs.SessionManager
 	googleOAuthConfig *oauth2.Config
 	azureOAuth2Config *oauth2.Config
-	mailer            mailer.Mailer
+	mailer            mailer.MailerInterface
 }
 
 func main() {
