@@ -19,7 +19,16 @@ INSERT INTO user_groups (user_id, group_id) VALUES
 INSERT INTO auth_tokens (user_id, auth_provider, access_token, refresh_token, token_type, expiry, scope) VALUES
 (1, 'google', 'access-token-1', 'refresh-token-1', 'Bearer', NOW() + INTERVAL '1 hour', 'scope-1');
 
+
+-- Seed data for appointments
+INSERT INTO appointments (id, creator_id, target_id, title, description, start_time, end_time, location, status, created_at, updated_at, time_zone, visibility, recurrence) VALUES
+(1, 1, 2, 'Appointment 1', 'Description 1', '2023-06-01 12:00:00', '2023-06-01 13:00:00', 'Location 1', 'pending', '2023-06-01 10:00:00', '2023-06-01 10:00:00', 'UTC', 'public', 'daily'),
+(2, 2, 1, 'Appointment 2', 'Description 2', '2023-06-02 14:00:00', '2023-06-02 15:00:00', 'Location 2', 'accepted', '2023-06-02 10:00:00', '2023-06-02 10:00:00', 'UTC', 'private', 'weekly');
+
 -- Adjust the sequences for all my tables
 SELECT setval('users_id_seq', (SELECT MAX(id) FROM users) + 1);
 SELECT setval('groups_id_seq', (SELECT MAX(id) FROM groups) + 1);
 SELECT setval('user_groups_id_seq', (SELECT MAX(id) FROM user_groups) + 1);
+SELECT setval('appointments_id_seq', (SELECT MAX(id) FROM appointments) + 1);
+
+
