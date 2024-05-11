@@ -25,6 +25,10 @@ type Mailer struct {
 	sender string
 }
 
+type MailerInterface interface {
+	Send(recipient, templateFile string, data any) error
+}
+
 func New(host string, port int, username, password, sender string) Mailer {
 	dialer := mail.NewDialer(host, port, username, password)
 	dialer.Timeout = 5 * time.Second

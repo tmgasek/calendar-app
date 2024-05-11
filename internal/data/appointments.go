@@ -28,6 +28,13 @@ type AppointmentModel struct {
 	DB *sql.DB
 }
 
+type AppointmentModelInterface interface {
+	Insert(a *Appointment) (int, error)
+	GetForUser(userID int) ([]*Appointment, error)
+	Delete(id int) error
+	Get(id int) (*Appointment, error)
+}
+
 func (m *AppointmentModel) Insert(a *Appointment) (int, error) {
 	var id int64
 	query := `

@@ -23,6 +23,13 @@ type GroupModel struct {
 	DB *sql.DB
 }
 
+type GroupModelInterface interface {
+	Insert(userID int, name, description string) (int, error)
+	Get(id int) (*Group, error)
+	GetAllForUser(userID int) ([]*Group, error)
+	AddMember(groupID, userID int) error
+}
+
 // Insert a new group. Also auto insert the creator as a member.
 func (m *GroupModel) Insert(userID int, name, description string) (int, error) {
 	query := `

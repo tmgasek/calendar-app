@@ -57,6 +57,7 @@ func (app *application) render(
 
 // write error msg and stack trace to errorLog, send generic 500 res to user
 func (app *application) serverError(w http.ResponseWriter, err error) {
+	fmt.Println(err)
 	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
 	app.errorLog.Output(2, trace)
 

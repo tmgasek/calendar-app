@@ -32,6 +32,13 @@ type AppointmentRequestModel struct {
 	DB *sql.DB
 }
 
+type AppointmentRequestModelInterface interface {
+	Insert(request *AppointmentRequest) error
+	GetForUser(userID int) ([]*AppointmentRequest, error)
+	Get(requestID int) (*AppointmentRequest, error)
+	Delete(requestID int) error
+}
+
 // Upserts the appointment request.
 func (m *AppointmentRequestModel) Insert(request *AppointmentRequest) error {
 	query := `

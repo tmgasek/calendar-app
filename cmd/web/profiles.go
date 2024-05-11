@@ -36,6 +36,7 @@ func (app *application) userProfile(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) {
 	templateData := app.newTemplateData(r)
+	templateData.Form = appointmentRequestCreateForm{}
 
 	currUserID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
 	targetUserID, err := app.readIDParam(r)

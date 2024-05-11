@@ -12,6 +12,7 @@
           <p>{{.Description}}</p>
           <p>{{.StartTime}} - {{.EndTime}}</p>
           <p>{{.Location}}</p>
+
           <form action="/appointments/delete/{{.ID}}" method="POST">
             <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}" />
             <button type="submit">Delete</button>

@@ -43,7 +43,8 @@ func (app *application) viewOneGroupPage(w http.ResponseWriter, r *http.Request)
 
 	group, err := app.models.Groups.Get(int(groupID))
 	if err != nil {
-		app.serverError(w, err)
+		// app.serverError(w, err)
+		app.clientError(w, http.StatusNotFound, "Group not found")
 		return
 	}
 
@@ -87,6 +88,17 @@ func (app *application) createGroup(w http.ResponseWriter, r *http.Request) {
 	err := app.decodePostForm(r, &form)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest, "Invalid form data")
+		return
+	}
+
+	// Validate the form.
+	form.CheckField(validator.NotBlank(form.Name), "name", "This field cannot be blank")
+	form.CheckField(validator.MaxChars(form.Name, 50), "name", "This field is too long")
+	form.CheckField(validator.NotBlank(form.Description), "description", "This field cannot be blank")
+	form.CheckField(validator.MaxChars(form.Description, 1000), "description", "This field is too long")
+
+	if !form.Valid() {
+		app.clientError(w, http.StatusUnprocessableEntity, "Invalid form data")
 		return
 	}
 

@@ -45,6 +45,17 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// Validate the form.
+	form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
+	form.CheckField(validator.NotBlank(form.Description), "description", "This field cannot be blank")
+	form.CheckField(validator.NotBlank(form.StartTime), "start_time", "This field cannot be blank")
+	form.CheckField(validator.NotBlank(form.EndTime), "end_time", "This field cannot be blank")
+
+	if !form.Valid() {
+		app.clientError(w, http.StatusUnprocessableEntity, "Invalid form data")
+		return
+	}
+
 	// Parse the start and end times
 	startTime, err := time.Parse("2006-01-02T15:04", form.StartTime)
 	if err != nil {
@@ -52,13 +63,6 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 		return
 	}
 	endTime, err := time.Parse("2006-01-02T15:04", form.EndTime)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	// Get the target user from the database.
-	targetUser, err := app.models.Users.Get(int(targetUserID))
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -157,6 +161,13 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// Get the target user from the database.
+	targetUser, err := app.models.Users.Get(int(targetUserID))
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	// Send an email to the target user.
 	err = app.mailer.Send(targetUser.Email, "confirm-appointment.tmpl", emailData)
 	if err != nil {
 		app.serverError(w, err)
