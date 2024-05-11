@@ -3,6 +3,7 @@ package assert
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func Equal[T comparable](t *testing.T, actual, expected T) {
@@ -46,5 +47,21 @@ func NotNil(t *testing.T, actual interface{}) {
 
 	if actual == nil {
 		t.Errorf("got: nil; expected: not nil")
+	}
+}
+
+func Nil(t *testing.T, actual interface{}) {
+	t.Helper()
+
+	if actual != nil {
+		t.Errorf("got: %v; expected: nil", actual)
+	}
+}
+
+func WithinDuration(t *testing.T, actual, expected time.Time, delta time.Duration) {
+	t.Helper()
+
+	if actual.Before(expected.Add(-delta)) || actual.After(expected.Add(delta)) {
+		t.Errorf("got: %v; expected: within %v of %v", actual, delta, expected)
 	}
 }

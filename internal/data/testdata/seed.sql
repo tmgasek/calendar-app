@@ -16,6 +16,8 @@ INSERT INTO user_groups (user_id, group_id) VALUES
 (2, 1),
 (1, 2);
 
+INSERT INTO auth_tokens (user_id, auth_provider, access_token, refresh_token, token_type, expiry, scope) VALUES
+(1, 'google', 'access-token-1', 'refresh-token-1', 'Bearer', NOW() + INTERVAL '1 hour', 'scope-1');
 
 -- Adjust the sequences for all my tables
 SELECT setval('users_id_seq', (SELECT MAX(id) FROM users) + 1);
