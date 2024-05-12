@@ -43,7 +43,7 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/oauth/microsoft/callback", protected.ThenFunc(app.handleMicrosoftAuthCallback))
 
 	// Profile views
-	router.Handler(http.MethodGet, "/user/profile", protected.ThenFunc(app.userProfile))
+	router.Handler(http.MethodGet, "/users/profile", protected.ThenFunc(app.userProfile))
 	router.Handler(http.MethodGet, "/users/profile/:id", protected.ThenFunc(app.viewUserProfile))
 	// User search
 	router.Handler(http.MethodGet, "/users/search", protected.ThenFunc(app.searchUsers))
@@ -55,7 +55,7 @@ func (app *application) routes() http.Handler {
 
 	// Appointment Requests
 	router.Handler(http.MethodGet, "/requests", protected.ThenFunc(app.viewAppointmentRequests))
-	router.Handler(http.MethodPost, "/request/:id/update", protected.ThenFunc(app.updateAppointmentRequest))
+	router.Handler(http.MethodPost, "/requests/:id/update", protected.ThenFunc(app.updateAppointmentRequest))
 
 	// Settings
 	router.Handler(http.MethodGet, "/settings", protected.ThenFunc(app.viewSettings))

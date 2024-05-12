@@ -68,11 +68,6 @@ func (app *application) serverError(w http.ResponseWriter, err error) {
 	)
 }
 
-// send specific status code and corresponding description to user
-// func (app *application) clientError(w http.ResponseWriter, status int) {
-// 	http.Error(w, http.StatusText(status), status)
-// }
-
 type ErrorData struct {
 	Status  int
 	Message string
@@ -85,11 +80,6 @@ func (app *application) clientError(w http.ResponseWriter, status int, message s
 	}
 	app.render(w, status, "error.tmpl", &templateData{ErrorData: data})
 }
-
-// convenient wrapper around clientError, sends 404 res to user
-// func (app *application) notFound(w http.ResponseWriter) {
-// 	app.clientError(w, http.StatusNotFound)
-// }
 
 // DST is target destination that we want to decode the form data into.
 func (app *application) decodePostForm(r *http.Request, dst any) error {

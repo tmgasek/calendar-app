@@ -124,7 +124,6 @@ func (app *application) createAppointmentRequest(w http.ResponseWriter, r *http.
 			}
 		}
 
-		//////////////////
 	} else if appointmentType == "group" {
 		// Get the group from the database.
 		group, err := app.models.Groups.Get(form.GroupID)

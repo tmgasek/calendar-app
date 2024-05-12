@@ -55,7 +55,6 @@ func (app *application) viewOneGroupPage(w http.ResponseWriter, r *http.Request)
 			isMember = true
 			break
 		}
-
 	}
 
 	if !isMember {
@@ -69,7 +68,6 @@ func (app *application) viewOneGroupPage(w http.ResponseWriter, r *http.Request)
 	}
 
 	templateData.Group = group
-
 	app.render(w, http.StatusOK, "group.tmpl", templateData)
 }
 

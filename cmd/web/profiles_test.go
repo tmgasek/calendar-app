@@ -15,7 +15,7 @@ func TestAuthedUserProfile(t *testing.T) {
 
 	defer ts.Close()
 
-	code, _, _ := ts.get(t, "/user/profile")
+	code, _, _ := ts.get(t, "/users/profile")
 
 	assert.Equal(t, code, http.StatusOK)
 }
@@ -26,7 +26,7 @@ func TestUnauthedUserProfile(t *testing.T) {
 
 	defer ts.Close()
 
-	code, _, _ := ts.get(t, "/user/profile")
+	code, _, _ := ts.get(t, "/users/profile")
 
 	assert.Equal(t, code, http.StatusSeeOther)
 }

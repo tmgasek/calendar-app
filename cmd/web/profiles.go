@@ -46,7 +46,7 @@ func (app *application) viewUserProfile(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if currUserID == int(targetUserID) {
-		http.Redirect(w, r, "/user/profile", http.StatusSeeOther)
+		http.Redirect(w, r, "/users/profile", http.StatusSeeOther)
 		return
 	}
 
@@ -105,6 +105,7 @@ func (app *application) fetchEventsForUser(userID int) ([]*data.Event, error) {
 	return allEvents, nil
 }
 
+// initHourlyAvailability initializes a 14-day hourly availability for a user.
 func (app *application) initHourlyAvailability(start, end time.Time, allEvents []*data.Event) []HourlyAvailability {
 	availability := make([]HourlyAvailability, 0)
 	for d := start; d.Before(end); d = d.AddDate(0, 0, 1) {

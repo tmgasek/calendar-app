@@ -12,7 +12,7 @@
           <h3>{{.Description}}</h3>
           <time>{{formatEventTimes .StartTime .EndTime}}</time>
 	  <p>Requester: {{.Requester.Name}} ({{.Requester.Email}})</p>
-	  <form action="/request/{{.RequestID}}/update" method="POST">
+	  <form action="/requests/{{.RequestID}}/update" method="POST">
 	    <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}" />
 	    <button type="submit" name="action" value="confirmed">Accept</button>
 	    <button type="submit" name="action" value="declined">Decline</button>
