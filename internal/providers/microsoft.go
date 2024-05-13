@@ -198,11 +198,39 @@ type GraphLocation struct {
 }
 
 func convertGraphEventToEvent(userID int, graphEvent GraphEvent) *data.Event {
-	startTime, _ := time.Parse("2006-01-02T15:04:05.0000000", graphEvent.Start.DateTime)
-	endTime, _ := time.Parse("2006-01-02T15:04:05.0000000", graphEvent.End.DateTime)
+	fmt.Println("GraphEvent Start DateTime:", graphEvent.Start.DateTime)
+	fmt.Println("GraphEvent End DateTime:", graphEvent.End.DateTime)
 
-	createdAt, _ := time.Parse(time.RFC3339, graphEvent.CreatedDateTime)
-	updatedAt, _ := time.Parse(time.RFC3339, graphEvent.LastModifiedDateTime)
+	// Assume this will be used only in the UK.
+	loc, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		fmt.Println("error loading location:", err)
+		loc = time.UTC // Fallback to UTC if the location loading fails
+	}
+
+	const graphAPILayout = "2006-01-02T15:04:05.0000000"
+
+	startTime, err := time.Parse(graphAPILayout, graphEvent.Start.DateTime)
+	if err != nil {
+		fmt.Println("error parsing start time:", err)
+	}
+	endTime, err := time.Parse(graphAPILayout, graphEvent.End.DateTime)
+	if err != nil {
+		fmt.Println("error parsing end time:", err)
+	}
+
+	// Convert the times to the user's local timezone
+	startTime = startTime.In(loc)
+	endTime = endTime.In(loc)
+
+	createdAt, err := time.Parse(time.RFC3339, graphEvent.CreatedDateTime)
+	if err != nil {
+		fmt.Println("error parsing created time:", err)
+	}
+	updatedAt, err := time.Parse(time.RFC3339, graphEvent.LastModifiedDateTime)
+	if err != nil {
+		fmt.Println("error parsing updated time:", err)
+	}
 
 	return &data.Event{
 		UserID:          userID,
@@ -214,7 +242,7 @@ func convertGraphEventToEvent(userID int, graphEvent GraphEvent) *data.Event {
 		EndTime:         endTime,
 		Location:        graphEvent.Location.DisplayName,
 		IsAllDay:        graphEvent.IsAllDay,
-		TimeZone:        graphEvent.Start.TimeZone,
+		TimeZone:        loc.String(),
 		CreatedAt:       createdAt,
 		UpdatedAt:       updatedAt,
 	}
