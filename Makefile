@@ -54,7 +54,7 @@ db/migrations/down: confirm
 # ==================================================================================== #
 # BUILD
 # ==================================================================================== #
-## build/api: build the cmd/api application
+## build/web: build the cmd/web application
 .PHONY: build/web
 build/web:
 	@echo 'Building cmd/web...'
