@@ -9,7 +9,7 @@
     <ul>
       {{range .Events}}
       <li>
-        <h5>{{.Title}}</h5>
+        <h5>{{.Title}} ({{.Provider}})</h5> 
         <span>{{.Description}}</span>
         <time>{{formatEventTimes .StartTime .EndTime}}</time>
       </li>
