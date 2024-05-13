@@ -60,7 +60,6 @@ func (app *application) requireAuthentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// If user is not authed, redirect and return from middleware chain so
 		// that no subsequent handlers in the chain are executed.
-
 		if !app.isAuthenticated(r) {
 			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 			return

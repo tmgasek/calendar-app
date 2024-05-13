@@ -109,10 +109,6 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
-	// 1. Check that the provided name, email address and password are not blank.
-	// 2. Sanity check the format of the email address.
-	// 3. Ensure that the password is at least 8 characters long.
-	// 4. Make sure that the email address isn’t already in use.
 	var form userSignupForm
 
 	err := app.decodePostForm(r, &form)
